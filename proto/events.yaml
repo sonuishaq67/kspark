@@ -54,6 +54,17 @@ events:
       new_difficulty: int
       reason: string  # success | struggle
       changed_at: timestamp
+
+  # Progression aggregate (P3 emits, P2 consumes for report attachment — design §2.14 step 8)
+  progression.updated:
+    fields:
+      user_id: uuid
+      session_id: uuid
+      xp_breakdown: object  # {base, quality, difficulty, streak_bonus, total}
+      level_up: object  # nullable: {old_level, new_level, unlocked_features}
+      new_achievements: array  # [achievement_id, ...]
+      difficulty_deltas: array  # [{topic_id, old, new, reason}, ...]
+      updated_at: timestamp
   
   # Research events (P1 emits)
   research.completed:

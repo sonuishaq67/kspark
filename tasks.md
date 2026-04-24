@@ -4,9 +4,31 @@ Tasks are grouped by milestone. Each references the user stories it addresses. T
 
 If running this whole spec feels heavy in Kiro, natural seams to split into separate specs are: foundations + research, mock interview core, coding round, progression, practice mode. The ordering below assumes a single comprehensive build.
 
+**Hackathon ordering:** Milestone 0 is the demo-cut path that ships in 36–48 hours and is the only milestone required for hackathon submission. Milestones 1–12 resume the full-product build after submission. If Milestone 0 is incomplete by hour 36, cut features from §0 — do not advance to Milestone 1.
+
+## Milestone 0: Hackathon demo cut
+
+The demo proves exactly one bet — **Bet 1: the orchestrator listens.** Everything below is in service of that single moment: agent probes on a partial answer, advances on a complete one, refuses ghostwriting. All other bets are deferred to Milestones 1–12. See requirements §0 for the user-story subset; see design ADR-016 for the process-collapse decision.
+
+- [ ] 0.1 Stub a single Python + FastAPI process under `services/p2_interview/orchestrator/` that absorbs gateway, reasoning, persona, speech, and scaffolding as in-process modules (not separate services). Postgres only — no Redis, no Judge0, no Node gateway. [ADR-016]
+- [ ] 0.2 Single Postgres migration: `users` (one hardcoded demo user) + `sessions` + `turns`. No progression tables, no candidate model tables, no question bank table. [US 1.1 reduced]
+- [ ] 0.3 Three hand-authored interview questions in `infra/seed/question_bank/demo.yaml` — one behavioral, one technical concept, one system design warmup. Each carries 2–3 explicit gap hints. No DB seed step, loaded at startup. [US 7.1]
+- [ ] 0.4 `prompts/p2_classify_turn.md` returning `{kind: complete|partial|clarify|stall, gap_addressed: string|null}` as JSON. [US 7.1]
+- [ ] 0.5 `prompts/p2_generate_probe.md` taking question text, gap hints, and transcript-so-far. [US 7.1]
+- [ ] 0.6 `prompts/p2_scaffold_refusal.md` with positive/negative refusal examples; injected into every sub-agent prompt. No middleware, no CI gate. [US 14.1 reduced]
+- [ ] 0.7 Orchestrator state machine (PLANNING → INTRO → RUNNING_QUESTION → CLOSING) and per-question sub-agent with thread tracker (gap_addressed, probe_count, status). State held in process memory + flushed to Postgres at session end. [US 7.1, 7.4]
+- [ ] 0.8 Deepgram Nova-3 streaming ASR over WebSocket directly to the orchestrator. No VAD library — use Deepgram's `endpointing` for end-of-turn. No Whisper fallback for the demo. [US 7.1]
+- [ ] 0.9 ElevenLabs streaming MP3 TTS played in the browser via `AudioContext`. Single voice ID per session. Barge-in optional and out of scope for §0. [US 7.3 reduced]
+- [ ] 0.10 `MOCK_ASR=1` env flag that swaps Deepgram for a hardcoded transcript array. Required by hour 20 for demo backup. [Demo resilience, not in any user story — hackathon-only]
+- [ ] 0.11 Two Next.js pages: `/interview/[sessionId]` (mic toggle, live transcript, AI speech indicator, end-session button) and `/report/[sessionId]` (TLDR text only — no radar chart, no voice summary, no 1-week plan). [US 7.1, 9.1 reduced]
+- [ ] 0.12 `prompts/p2_generate_feedback.md` producing a 3–5 sentence TLDR that explicitly references which gap was probed. Manual smoke check: TLDR must mention the probed gap. [US 9.1 reduced]
+- [ ] 0.13 Manual acceptance gate before submission — three consecutive end-to-end runs each show: probe on a partial answer, advance on a complete answer, refusal on a ghostwriting attempt, TLDR referencing the probed gap, no process crash. If any fails on run three, cut a feature; do not patch around it.
+
+**Explicitly deferred from §0** (resume after submission): Tavily research [US 2.x], Hume + librosa prosody [US 9.3], OpenAI/Whisper fallbacks [tech.md], streaming pre-decision [US 7.2], coding round + Judge0 + LeetCode [US 8.x], practice mode [US 5.x], guided learning [US 6.x], progression engine and all of XP/levels/streaks/achievements/difficulty [US 10–12], onboarding/resume/JD/diagnostic [US 1.x, 3.x], persona picker and challenging persona [US 4.2], dashboard/profile/settings/achievements pages [US 11.2, 15.1], full-loop and stress mode [US 13.x], scaffolding middleware classifier and CI eval gate [US 14.2], 200+ question seed, voice summary, radar chart, per-question rubrics.
+
 ## Milestone 1: Foundations
 
-- [ ] 1.1 Scaffold monorepo per `steering/structure.md` (`/web`, `/gateway`, `/services`, `/prompts`, `/config`, `/proto`, `/infra`)
+- [ ] 1.1 Scaffold monorepo per `structure.md` (`/web`, `/services` (with `gateway/` under `services/p1_platform/`), `/prompts`, `/config`, `/proto`, `/infra`)
 - [ ] 1.2 Set up `docker-compose.yml` with Postgres 16 + pgvector, Redis 7, Judge0, and placeholder service containers
 - [ ] 1.3 Postgres migrations: `users`, `candidate_topics`, `candidate_attributes`, `interview_sessions`, `turns`, `reports`, `interview_questions`, `coding_attempts` [US 1.1, 3.1, 7.1, 8.1, 9.1, 15.1]
 - [ ] 1.4 Postgres migrations for progression event log: `xp_events`, `level_up_events`, `streak_events`, `achievement_earned_events`, `difficulty_change_events`, `scaffolding_refused_events`, plus derived state tables `user_levels`, `streaks`, `user_achievements`, `user_feature_unlocks` [US 10.1, 11.1, 11.2, 12.1, 14.2]
@@ -103,7 +125,7 @@ If running this whole spec feels heavy in Kiro, natural seams to split into sepa
 
 ## Milestone 7: Scaffolding enforcement
 
-- [ ] 7.1 Author `scaffold_refusal.md` prompt fragment with positive and negative refusal examples [US 14.1]
+- [ ] 7.1 Author `prompts/p2_scaffold_refusal.md` prompt fragment with positive and negative refusal examples [US 14.1]
 - [ ] 7.2 Inject the scaffolding fragment into every sub-agent's context at spawn [US 14.1]
 - [ ] 7.3 Implement scaffolding classifier middleware (regex patterns for obvious cases, short LLM check on ambiguous cases) [US 14.1]
 - [ ] 7.4 Force triggered turns through dedicated `scaffold_refusal` template; mode-aware tone (warm in Learning, curt in Professional) [US 14.1]

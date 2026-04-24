@@ -15,6 +15,44 @@ Video capture and attention tracking are deferred to a follow-up spec. Mobile ap
 
 ---
 
+## 0. Hackathon scope (overrides §1–§16 for the demo cut)
+
+The hackathon submission proves Bet 1 only. While §0 is in force, the acceptance criteria of the listed user stories below are reduced to the subset stated here, and all other user stories are deferred. After submission, §0 is removed and §1–§16 take over again. See `tasks.md` Milestone 0 and `design.md` ADR-016.
+
+### User story 0.1 (in scope, reduced from §7.1, §7.4)
+As a candidate, I want to run a voice interview where the AI probes my gaps instead of advancing.
+
+**Acceptance criteria (demo cut):**
+- WHEN I start the demo session THE SYSTEM SHALL load three hand-authored questions with pre-authored gap hints
+- WHEN I give an answer that omits a gap covered in the hints THE SYSTEM SHALL classify the turn as `partial` and ask a probe targeting that specific gap
+- WHEN I give an answer covering all gap hints THE SYSTEM SHALL classify the turn as `complete`, acknowledge briefly, and advance to the next question
+- THE SYSTEM SHALL maintain a thread tracker preventing re-asking a closed gap within the same session
+- Streaming pre-decision (§7.2) is **deferred**; end-of-turn → AI-begins is allowed up to 5 seconds at p95 for the demo cut
+
+### User story 0.2 (in scope, reduced from §14.1)
+As a candidate, I want the agent to refuse to ghostwrite, so that it acts as a sparring partner.
+
+**Acceptance criteria (demo cut):**
+- WHEN I say "just tell me what to say" or any of the four hand-authored ghostwriting probes THE SYSTEM SHALL refuse and offer a Socratic hint
+- THE refusal SHALL come from the prompt fragment in `prompts/p2_scaffold_refusal.md` injected into the sub-agent context
+- THE middleware classifier and CI ≥95% refusal-rate gate (§14.2) are **deferred**; the demo passes on a manual run of 5 ghostwriting prompts
+
+### User story 0.3 (in scope, reduced from §9.1)
+As a candidate, I want a short feedback summary that proves the orchestrator was listening.
+
+**Acceptance criteria (demo cut):**
+- WHEN I end the session THE SYSTEM SHALL generate a 3–5 sentence TLDR within 15 seconds
+- THE TLDR SHALL explicitly reference at least one gap that was probed during the session
+- The voice summary, radar chart, per-question rubric, delivery analytics, XP breakdown, and 1-week plan in §9.1 are **deferred**
+
+### Deferred to post-submission
+
+The following user stories are **out of scope for the demo cut** and resume after submission per the existing §1–§16: 1.1–1.4, 2.1–2.2, 3.1, 4.1–4.2, 5.1–5.2, 6.1, 7.2, 7.3, 7.5, 7.6, 8.1–8.2, 9.2, 9.3, 10.1–10.2, 11.1–11.2, 12.1, 13.1–13.2, 14.2, 15.1.
+
+The following NFRs are **relaxed for the demo cut**: turn latency (3s → 5s p95), cost ceiling (no enforcement), event-log completeness (no progression events emitted), encryption at rest (Postgres default), scaffolding refusal CI gate (manual instead). All NFRs resume after submission.
+
+---
+
 ## 1. Onboarding and targeting
 
 ### User story 1.1
