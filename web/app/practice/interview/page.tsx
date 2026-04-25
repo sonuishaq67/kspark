@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Layout from "@/components/shared/Layout";
 import CodingRoom from "@/components/live-code-review/CodingRoom";
 import InterviewRoom from "@/components/roleready/InterviewRoom";
-import StepProgress from "@/components/roleready/StepProgress";
 
 function InterviewContent() {
   const router = useRouter();
@@ -20,6 +19,9 @@ function InterviewContent() {
   const duration = parseInt(searchParams.get("duration") ?? "15", 10);
 
   const phases = phasesRaw ? phasesRaw.split(",") : [];
+  const hasLiveCoding =
+    sessionType === "CODING_PRACTICE" ||
+    phases.some((phase) => phase.toUpperCase().includes("CODING"));
 
   // If no session_id, redirect to setup
   useEffect(() => {
@@ -39,29 +41,26 @@ function InterviewContent() {
   }
 
   return (
-    <Layout>
-      <div className="space-y-4">
-        <StepProgress activeStep={4} />
-        {sessionType === "CODING_PRACTICE" ? (
-          <CodingRoom
-            sessionId={sessionId}
-            introMessage={decodeURIComponent(introMessage)}
-            sessionType={sessionType}
-            mode={mode}
-            phases={phases}
-            durationMinutes={duration}
-          />
-        ) : (
-          <InterviewRoom
-            sessionId={sessionId}
-            introMessage={decodeURIComponent(introMessage)}
-            sessionType={sessionType}
-            mode={mode}
-            phases={phases}
-            durationMinutes={duration}
-          />
-        )}
-      </div>
+    <Layout fullBleed={hasLiveCoding}>
+      {hasLiveCoding ? (
+        <CodingRoom
+          sessionId={sessionId}
+          introMessage={decodeURIComponent(introMessage)}
+          sessionType={sessionType}
+          mode={mode}
+          phases={phases}
+          durationMinutes={duration}
+        />
+      ) : (
+        <InterviewRoom
+          sessionId={sessionId}
+          introMessage={decodeURIComponent(introMessage)}
+          sessionType={sessionType}
+          mode={mode}
+          phases={phases}
+          durationMinutes={duration}
+        />
+      )}
     </Layout>
   );
 }

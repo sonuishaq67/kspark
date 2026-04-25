@@ -141,6 +141,61 @@ export const api = {
       }),
   },
 
+  // ── Readiness / Gap Analysis ────────────────────────────────────────────
+
+  readiness: {
+    /**
+     * Analyze candidate readiness by comparing resume to job description.
+     * Returns readiness score and skill gaps categorized as strong/partial/missing.
+     */
+    analyze: (body: {
+      job_description: string;
+      resume: string;
+      company?: string;
+      role_type?: string;
+      interview_type?: "behavioral" | "technical" | "coding" | "mixed";
+    }) =>
+      request<{
+        session_id: string;
+        readiness_score: number;
+        summary: string;
+        strong_matches: Array<{ label: string; evidence: string | null }>;
+        partial_matches: Array<{ label: string; evidence: string | null }>;
+        missing_or_weak: Array<{ label: string; evidence: string | null }>;
+        interview_focus_areas: string[];
+        prep_brief: string[];
+      }>(`${BACKEND_URL}/api/readiness/analyze`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+
+    /**
+     * Get all gaps for a session, grouped by category.
+     */
+    getGaps: (sessionId: string) =>
+      request<{
+        session_id: string;
+        strong: Array<{
+          id: string;
+          label: string;
+          evidence: string | null;
+          status: string;
+        }>;
+        partial: Array<{
+          id: string;
+          label: string;
+          evidence: string | null;
+          status: string;
+        }>;
+        missing: Array<{
+          id: string;
+          label: string;
+          evidence: string | null;
+          status: string;
+        }>;
+      }>(`${BACKEND_URL}/api/readiness/${sessionId}/gaps`),
+  },
+
   // ── Resume parsing ─────────────────────────────────────────────────────
 
   resume: {

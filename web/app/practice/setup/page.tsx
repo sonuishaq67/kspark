@@ -117,9 +117,9 @@ EDUCATION
 B.S. Computer Science, State University (2020)`,
 
   jobDescription: `Senior Software Engineer - Backend
-Google | Mountain View, CA
+Amazon | Seattle, WA
 
-We're looking for a Senior Software Engineer to join our Cloud Infrastructure team.
+We're looking for a Senior Software Engineer to join our AWS Infrastructure team.
 
 RESPONSIBILITIES
 - Design and implement scalable distributed systems
@@ -130,10 +130,10 @@ RESPONSIBILITIES
 
 REQUIREMENTS
 - 5+ years of software engineering experience
-- Strong proficiency in Go, Python, or Java
+- Strong proficiency in Java, Python, or Go
 - Experience with distributed systems and microservices
 - Deep understanding of system design and scalability
-- Experience with cloud platforms (GCP, AWS, or Azure)
+- Experience with cloud platforms (AWS, GCP, or Azure)
 - Strong communication and leadership skills
 
 PREFERRED
@@ -229,6 +229,44 @@ export default function PracticeSetupPage() {
     setError(null);
   };
 
+  const handleAnalyzeReadiness = async () => {
+    if (!jobDescription.trim()) {
+      setError("Please provide a job description");
+      return;
+    }
+    if (!resume.trim()) {
+      setError("Please provide your resume");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setProgress("Analyzing your readiness...");
+
+    try {
+      const analysis = await api.readiness.analyze({
+        job_description: jobDescription,
+        resume: resume,
+        company: company || undefined,
+        role_type: roleType || undefined,
+        interview_type: "mixed",
+      });
+
+      // Store analysis in sessionStorage for gap map page
+      sessionStorage.setItem(
+        `analysis_${analysis.session_id}`,
+        JSON.stringify(analysis)
+      );
+
+      // Navigate to gap map
+      router.push(`/practice/gap-map?session_id=${analysis.session_id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to analyze readiness");
+      setLoading(false);
+      setProgress("");
+    }
+  };
+
   const handleStart = async () => {
     setLoading(true);
     setError(null);
@@ -288,7 +326,7 @@ export default function PracticeSetupPage() {
   const loadExampleData = () => {
     setResume(EXAMPLE_DATA.resume);
     setJobDescription(EXAMPLE_DATA.jobDescription);
-    setCompany("Google");
+    setCompany("Amazon");
     setRoleType("Senior SDE");
     setFocusArea("distributed systems and scalability");
   };
@@ -376,7 +414,7 @@ export default function PracticeSetupPage() {
               type="text"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Google, Akamai"
+              placeholder="e.g. Amazon, Akamai"
               className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none"
             />
           </div>
@@ -441,18 +479,18 @@ export default function PracticeSetupPage() {
                   <button
                     key={d.id}
                     onClick={() => setDifficulty(d.id)}
-                    className={`relative rounded-xl py-3 text-sm font-semibold transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-3 text-sm font-semibold transition-all ${
                       active
                         ? "border border-transparent bg-gradient-to-br from-indigo-500/30 to-fuchsia-500/20 text-white ring-1 ring-indigo-400/40"
                         : "border border-white/10 bg-white/[0.03] text-gray-400 hover:border-white/20 hover:bg-white/[0.06]"
                     }`}
                   >
+                    <span>{d.label}</span>
                     {d.recommended && (
-                      <span className="absolute right-1.5 top-1 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                      <span className="rounded-full bg-indigo-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-indigo-200 ring-1 ring-indigo-400/30">
                         Default
                       </span>
                     )}
-                    {d.label}
                   </button>
                 );
               })}
@@ -529,26 +567,61 @@ export default function PracticeSetupPage() {
           </div>
         )}
 
-        <button
-          onClick={handleStart}
-          disabled={loading}
-          className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 py-4 text-sm font-semibold text-white shadow-2xl shadow-fuchsia-500/30 transition-shadow hover:shadow-fuchsia-500/50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
-          <span className="relative inline-flex items-center justify-center gap-2">
-            {loading ? (
-              <>
-                <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                {progress || "Starting session..."}
-              </>
-            ) : (
-              <>
-                Start {selectedType.label}
-                <span aria-hidden>→</span>
-              </>
-            )}
-          </span>
-        </button>
+        {/* Action buttons */}
+        <div className="space-y-4">
+          {/* Analyze Readiness button (if JD + resume provided) */}
+          {resume.trim() && jobDescription.trim() && (
+            <button
+              onClick={handleAnalyzeReadiness}
+              disabled={loading}
+              className="group relative w-full overflow-hidden rounded-full border-2 border-indigo-400/50 bg-indigo-500/10 py-4 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:border-indigo-400 hover:bg-indigo-500/20 hover:shadow-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
+              <span className="relative inline-flex items-center justify-center gap-2">
+                {loading && progress.includes("Analyzing") ? (
+                  <>
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                    {progress}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg">📊</span>
+                    Analyze My Readiness
+                    <span className="text-xs text-indigo-200">(Recommended)</span>
+                  </>
+                )}
+              </span>
+            </button>
+          )}
+
+          {/* Start Interview button */}
+          <button
+            onClick={handleStart}
+            disabled={loading}
+            className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 py-4 text-sm font-semibold text-white shadow-2xl shadow-fuchsia-500/30 transition-shadow hover:shadow-fuchsia-500/50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
+            <span className="relative inline-flex items-center justify-center gap-2">
+              {loading && !progress.includes("Analyzing") ? (
+                <>
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                  {progress || "Starting session..."}
+                </>
+              ) : (
+                <>
+                  {resume.trim() && jobDescription.trim() ? "Skip to Interview" : `Start ${selectedType.label}`}
+                  <span aria-hidden>→</span>
+                </>
+              )}
+            </span>
+          </button>
+
+          {resume.trim() && jobDescription.trim() && (
+            <p className="text-center text-xs text-gray-500">
+              💡 Tip: Analyze your readiness first to get personalized prep tips
+            </p>
+          )}
+        </div>
       </div>
     </Layout>
   );

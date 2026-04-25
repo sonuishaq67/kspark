@@ -3,64 +3,61 @@ import { ReactNode } from "react";
 
 interface LayoutProps {
   children: ReactNode;
-  /** Removes the max-width container — useful for full-bleed pages like the interview room */
+  /** Removes the max-width container for full workspace pages like the interview room. */
   fullBleed?: boolean;
 }
 
+const navItems = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/practice/setup", label: "Practice" },
+  { href: "/interview/new", label: "Quick interview" },
+];
+
 export default function Layout({ children, fullBleed = false }: LayoutProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#050510] text-gray-100">
-      {/* Ambient aurora background — shared with landing page */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="aurora anim-float-a left-[-15%] top-[-15%] h-[55vw] w-[55vw] bg-indigo-600/30" />
-        <div className="aurora anim-float-b right-[-20%] top-[10%] h-[50vw] w-[50vw] bg-fuchsia-500/20" />
-        <div className="aurora anim-float-c bottom-[-20%] left-[10%] h-[55vw] w-[55vw] bg-teal-400/20" />
-        <div className="absolute inset-0 grain opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050510]/60 to-[#050510]" />
-      </div>
-
-      {/* Sticky glass nav with backdrop band so content doesn't bleed through */}
-      <header className="sticky top-0 z-40">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[88px] bg-gradient-to-b from-[#050510] via-[#050510]/85 to-transparent backdrop-blur-md" />
-        <div className="relative px-4 pt-4">
-          <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full glass px-5 py-3">
-          <Link href="/" className="group flex items-center gap-3">
-            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-teal-400">
-              <span className="absolute inset-[3px] rounded-full bg-[#050510]" />
-              <span className="relative h-2 w-2 rounded-full bg-gradient-to-br from-indigo-400 to-teal-300" />
+    <div className="min-h-screen bg-[#f4f1ea] text-[#17211b]">
+      <header className="sticky top-0 z-40 border-b border-[#17211b]/10 bg-[#f4f1ea]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex items-center gap-3" aria-label="RoleReady AI home">
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#17211b] text-sm font-semibold text-[#f4f1ea]">
+              RR
             </span>
             <div className="leading-tight">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-indigo-300">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#667169]">
                 RoleReady
               </p>
-              <span className="text-sm font-semibold tracking-tight text-gray-100 transition-colors group-hover:text-white">
+              <span className="text-sm font-semibold tracking-tight text-[#17211b]">
                 AI Interview Coach
               </span>
             </div>
           </Link>
-          <nav className="flex items-center gap-2 text-sm">
-            <Link
-              href="/dashboard"
-              className="rounded-full px-4 py-2 text-xs font-semibold text-gray-300 transition-colors hover:text-white"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/practice/setup"
-              className="rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-indigo-500/30 transition-shadow hover:shadow-fuchsia-500/40"
-            >
-              Start practice
-            </Link>
+
+          <nav className="hidden items-center gap-2 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-[#536058] transition hover:bg-white/60 hover:text-[#17211b]"
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
-          </div>
+
+          <Link
+            href="/practice/setup"
+            className="rounded-lg bg-[#17211b] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2b3a31]"
+          >
+            Start practice
+          </Link>
         </div>
       </header>
 
       <main
         className={
           fullBleed
-            ? "px-4 py-8"
-            : "mx-auto max-w-6xl px-4 py-10"
+            ? "mx-auto max-w-7xl px-5 py-6 sm:px-6 lg:px-8"
+            : "mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8"
         }
       >
         {children}

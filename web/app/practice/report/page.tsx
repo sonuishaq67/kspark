@@ -5,12 +5,13 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Layout from "@/components/shared/Layout";
 import FollowUpAnalysis from "@/components/roleready/FollowUpAnalysis";
+import GapProgressSection from "@/components/roleready/GapProgressSection";
 import NextPracticePlan from "@/components/roleready/NextPracticePlan";
 import ReportSummary from "@/components/roleready/ReportSummary";
 import ScoreCard from "@/components/roleready/ScoreCard";
 import StepProgress from "@/components/roleready/StepProgress";
 import { ApiError, api } from "@/lib/api";
-import { GapReportItem, ReportResponse, ReportScores } from "@/lib/types";
+import { ReportResponse, ReportScores } from "@/lib/types";
 
 const SCORE_JUSTIFICATIONS: Record<keyof ReportScores, string> = {
   role_alignment: "How tightly your answers matched the target role and its expected priorities.",
@@ -19,16 +20,6 @@ const SCORE_JUSTIFICATIONS: Record<keyof ReportScores, string> = {
   evidence_strength: "How well you backed claims with concrete examples, outcomes, and metrics.",
   followup_recovery: "How effectively you improved once the interviewer probed a weak area.",
 };
-
-function gapTone(status: GapReportItem["status"]) {
-  if (status === "closed") {
-    return "border-green-700/40 bg-green-950/30 text-green-200";
-  }
-  if (status === "improved") {
-    return "border-amber-700/40 bg-amber-950/30 text-amber-200";
-  }
-  return "border-red-700/40 bg-red-950/30 text-red-200";
-}
 
 function PracticeReportContent() {
   const searchParams = useSearchParams();
@@ -169,40 +160,27 @@ function PracticeReportContent() {
               )}
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <section className="grid gap-6 xl:grid-cols-2">
               <div className="rounded-3xl glass p-6">
                 <h2 className="text-lg font-semibold text-gray-100">Strengths</h2>
+                <p className="mt-2 text-sm text-gray-400">
+                  These are the behaviors and skills you demonstrated well during the interview.
+                </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-gray-300">
                   {report.strengths.map((item, index) => (
                     <li key={`${item}-${index}`} className="flex gap-3">
-                      <span className="mt-1 text-green-300">•</span>
+                      <span className="mt-1 text-emerald-400">✓</span>
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="rounded-3xl glass p-6">
-                <h2 className="text-lg font-semibold text-gray-100">Gaps</h2>
-                <div className="mt-4 space-y-3">
-                  {report.gaps.map((gap, index) => (
-                    <article
-                      key={`${gap.label}-${index}`}
-                      className={`rounded-2xl border p-4 ${gapTone(gap.status)}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-sm font-semibold">{gap.label}</h3>
-                        <span className="rounded-full border border-current/30 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
-                          {gap.status}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6 text-current/90">
-                        {gap.evidence || "No evidence recorded."}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              </div>
+              <GapProgressSection
+                gaps={report.gaps}
+                title="Areas for Improvement"
+                description="Skills and knowledge areas that need focused practice"
+              />
             </section>
 
             <FollowUpAnalysis items={report.follow_up_analysis} />

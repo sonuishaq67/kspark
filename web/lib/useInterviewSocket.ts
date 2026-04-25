@@ -55,7 +55,6 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
 
   const streamBufferRef = useRef("");
   const audioChunksRef = useRef<string[]>([]);
-  const audioCompleteRef = useRef(false);
 
   const playAudio = useCallback(async (b64Chunks: string[]) => {
     if (b64Chunks.length === 0) return;
@@ -128,6 +127,8 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
           if (!isFinal && delta) {
             streamBufferRef.current += delta;
             setStreamingText(streamBufferRef.current);
+            // First real token has arrived — kill the thinking indicator now,
+            // not on selected_question (which leaves a dead gap in the UI).
             setIsThinking(false);
           } else if (isFinal) {
             const full = streamBufferRef.current;
@@ -136,26 +137,21 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
             }
             streamBufferRef.current = "";
             setStreamingText("");
-
-            setTimeout(() => {
-              if (audioChunksRef.current.length > 0) {
-                const chunks = [...audioChunksRef.current];
-                audioChunksRef.current = [];
-                playAudio(chunks);
-              } else {
-                audioCompleteRef.current = true;
-              }
-            }, 100);
           }
           break;
         }
 
         case "interviewer_audio_chunk": {
-          audioChunksRef.current.push(data.data as string);
-          if (audioCompleteRef.current) {
-            const chunks = [...audioChunksRef.current];
+          // Buffer everything; playback happens on interviewer_audio_complete.
+          const chunk = data.data as string;
+          if (chunk) audioChunksRef.current.push(chunk);
+          break;
+        }
+
+        case "interviewer_audio_complete": {
+          if (audioChunksRef.current.length > 0) {
+            const chunks = audioChunksRef.current;
             audioChunksRef.current = [];
-            audioCompleteRef.current = false;
             playAudio(chunks);
           }
           break;
@@ -180,7 +176,8 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
         }
 
         case "selected_question": {
-          setIsThinking(false);
+          // Keep isThinking=true here. The candidate should see "thinking…"
+          // until the very first text token actually arrives.
           break;
         }
 

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import TranscriptBubble from "@/components/roleready/TranscriptBubble";
-import LiveGapPanel from "@/components/roleready/LiveGapPanel";
 import { useInterviewSocket } from "@/lib/useInterviewSocket";
 import { ConversationTurn } from "@/lib/types";
 import CodeEditor from "./CodeEditor";
@@ -24,6 +23,20 @@ const STARTER_CODE = `def solve(nums):
 
 const LANGUAGES = ["python", "javascript", "typescript", "java", "cpp"];
 
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function phaseLabel(phase: string | null): string {
+  if (!phase) return "Starting...";
+  return phase
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function CodingRoom({
   sessionId,
   introMessage,
@@ -32,12 +45,13 @@ export default function CodingRoom({
   phases,
   durationMinutes,
 }: CodingRoomProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const conversationRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputText, setInputText] = useState("");
   const [code, setCode] = useState(STARTER_CODE);
   const [language, setLanguage] = useState("python");
   const [timeRemaining, setTimeRemaining] = useState(durationMinutes * 60);
+  const lastSentCodeRef = useRef("");
 
   const socket = useInterviewSocket(sessionId);
   const { isConnected, sendCodeUpdate } = socket;
@@ -55,16 +69,44 @@ export default function CodingRoom({
   }, [socket.isComplete]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = conversationRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [socket.conversation, socket.streamingText, socket.isThinking]);
 
   useEffect(() => {
     if (!isConnected) return;
+    // Don't fire reviews while the interviewer is mid-response — wastes an
+    // LLM call and the candidate can't read the review anyway.
+    if (
+      socket.reviewStatus === "reviewing" ||
+      socket.isThinking ||
+      socket.isSpeaking ||
+      Boolean(socket.streamingText)
+    ) {
+      return;
+    }
+
+    const normalized = `${language}:${code}`;
+    if (normalized === lastSentCodeRef.current) return;
+
     const timer = setTimeout(() => {
+      if (normalized === lastSentCodeRef.current) return;
+      lastSentCodeRef.current = normalized;
       sendCodeUpdate(code, language);
-    }, 1000);
+    }, 3500);
+
     return () => clearTimeout(timer);
-  }, [code, language, isConnected, sendCodeUpdate]);
+  }, [
+    code,
+    language,
+    isConnected,
+    sendCodeUpdate,
+    socket.reviewStatus,
+    socket.isThinking,
+    socket.isSpeaking,
+    socket.streamingText,
+  ]);
 
   const handleSubmit = useCallback(() => {
     const text = inputText.trim();
@@ -94,26 +136,43 @@ export default function CodingRoom({
     socket.isComplete;
 
   return (
-    <div className="grid h-[calc(100vh-7rem)] gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+    <div className="grid h-[calc(100vh-10rem)] min-h-[32rem] gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <section className="flex min-h-0 flex-col gap-3">
-        <div className="flex items-start gap-3">
-          <div className="flex-1">
-            <LiveGapPanel
-              currentPhase={currentPhase}
-              currentPhaseIndex={currentPhaseIndex}
-              totalPhases={phases.length}
-              timeRemaining={timeRemaining}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-gray-800 bg-gray-900/70 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                socket.isConnected ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
+              }`}
             />
+            <span className="text-sm font-semibold text-gray-100">
+              {phaseLabel(currentPhase)}
+            </span>
+            {phases.length > 0 && (
+              <span className="text-xs text-gray-500">
+                {currentPhaseIndex + 1}/{phases.length}
+              </span>
+            )}
           </div>
-          <div className="shrink-0 rounded-xl border border-gray-800 bg-gray-900/70 px-4 py-3 text-right">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
-              {sessionType.replace(/_/g, " ")}
-            </p>
-            <p className="mt-1 text-xs text-gray-400 capitalize">{mode} mode</p>
+
+          <div className="ml-auto flex items-center gap-3">
+            <span
+              className={`text-sm font-semibold tabular-nums ${
+                timeRemaining < 120 ? "text-red-400" : "text-gray-300"
+              }`}
+            >
+              {formatTime(timeRemaining)}
+            </span>
+            <span className="hidden text-xs text-gray-500 sm:inline">
+              {sessionType.replace(/_/g, " ")} · {mode}
+            </span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+        <div
+          ref={conversationRef}
+          className="flex-1 overflow-y-auto overscroll-contain rounded-xl border border-gray-800 bg-gray-900/50 p-4"
+        >
           <div className="flex flex-col gap-3">
             {turns.map((turn, i) => (
               <TranscriptBubble key={`${turn.speaker}-${i}`} turn={turn} />
@@ -143,7 +202,6 @@ export default function CodingRoom({
               </div>
             )}
 
-            <div ref={bottomRef} />
           </div>
         </div>
 

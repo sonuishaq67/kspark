@@ -79,24 +79,24 @@ export default function ResumePdfUpload() {
   };
 
   return (
-    <section className="mb-8 rounded-3xl glass p-5 sm:p-6">
+    <section className="mb-8 rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-xl">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-400/30 bg-rose-500/10 text-sm font-bold text-rose-200">
+            <span className="grid h-10 w-10 place-items-center rounded-lg border border-rose-200 bg-rose-50 text-xs font-bold text-rose-800">
               PDF
             </span>
             <div>
-              <h2 className="text-base font-semibold text-gray-100">Pull Resume From PDF</h2>
-              <p className="mt-1 text-sm leading-relaxed text-gray-400">
+              <h2 className="text-base font-semibold text-[#17211b]">Pull resume from PDF</h2>
+              <p className="mt-1 text-sm leading-6 text-[#536058]">
                 Extract resume text here and it will be waiting in the practice setup form.
               </p>
             </div>
           </div>
 
           {fileName && (
-            <p className="mt-3 text-xs text-gray-500">
-              File: <span className="text-gray-300">{fileName}</span>
+            <p className="mt-3 text-xs text-[#667169]">
+              File: <span className="font-medium text-[#17211b]">{fileName}</span>
             </p>
           )}
         </div>
@@ -109,10 +109,10 @@ export default function ResumePdfUpload() {
             }}
             onDragLeave={() => setDragActive(false)}
             onDrop={handleDrop}
-            className={`flex min-h-[116px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-5 text-center transition-colors ${
+            className={`flex min-h-[116px] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-5 text-center transition-colors ${
               dragActive
-                ? "border-indigo-400 bg-indigo-500/10"
-                : "border-gray-700 bg-gray-950/40 hover:border-indigo-500/70"
+                ? "border-[#17211b] bg-[#e7efe9]"
+                : "border-[#17211b]/20 bg-white hover:border-[#17211b]/40"
             }`}
             onClick={() => inputRef.current?.click()}
             role="button"
@@ -131,16 +131,16 @@ export default function ResumePdfUpload() {
               className="hidden"
               onChange={handleInputChange}
             />
-            <span className="text-sm font-semibold text-gray-200">
+            <span className="text-sm font-semibold text-[#17211b]">
               {state === "uploading" ? "Uploading..." : "Drop PDF or browse"}
             </span>
             <span
               className={`mt-2 text-xs leading-relaxed ${
                 state === "error"
-                  ? "text-red-300"
+                  ? "text-rose-700"
                   : state === "ready"
-                    ? "text-emerald-300"
-                    : "text-gray-500"
+                    ? "text-emerald-700"
+                    : "text-[#667169]"
               }`}
             >
               {message}
@@ -149,10 +149,10 @@ export default function ResumePdfUpload() {
 
           <Link
             href="/practice/setup"
-            className={`inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${
+            className={`inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors ${
               state === "ready"
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "border border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-200"
+                ? "bg-[#17211b] text-white hover:bg-[#2b3a31]"
+                : "border border-[#17211b]/15 bg-white text-[#536058] hover:text-[#17211b]"
             }`}
           >
             Continue to setup

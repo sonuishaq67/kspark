@@ -139,7 +139,7 @@ export default function InterviewRoom({
   const isActive = !socket.isComplete;
 
   return (
-    <div className="relative flex h-[calc(100vh-7rem)] flex-col items-center overflow-hidden">
+    <div className="relative flex h-[calc(100vh-10rem)] min-h-[32rem] flex-col items-center overflow-hidden">
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="flex w-full items-center justify-between px-2 py-2">

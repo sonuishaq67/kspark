@@ -10,9 +10,7 @@ function averageReadinessScore(sessions: SessionListItem[]) {
     .filter((score): score is number => typeof score === "number");
 
   if (!scores.length) return null;
-
-  const total = scores.reduce((sum, score) => sum + score, 0);
-  return Math.round(total / scores.length);
+  return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
 }
 
 function mostCommonGap(sessions: SessionListItem[]) {
@@ -35,33 +33,19 @@ function mostCommonGap(sessions: SessionListItem[]) {
   return topGap;
 }
 
-function readinessTone(score: number | null) {
-  if (score === null) {
-    return "text-gray-300";
-  }
-  if (score <= 40) {
-    return "text-red-300";
-  }
-  if (score <= 70) {
-    return "text-amber-300";
-  }
-  return "text-green-300";
+function scoreColor(score: number | null) {
+  if (score === null) return "text-[#17211b]";
+  if (score <= 40) return "text-rose-700";
+  if (score <= 70) return "text-amber-700";
+  return "text-emerald-700";
 }
 
-function StatCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-}) {
+function StatCard({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
-    <div className="rounded-3xl glass p-6 glass-hover">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-gray-50">{value}</p>
-      <p className="mt-2 text-sm text-gray-400">{helper}</p>
+    <div className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-5 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-[#17211b]">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-[#536058]">{helper}</p>
     </div>
   );
 }
@@ -73,25 +57,25 @@ export default function DashboardStats({ sessions }: DashboardStatsProps) {
   return (
     <section className="grid gap-4 md:grid-cols-3">
       <StatCard
-        label="Total Sessions"
+        label="Total sessions"
         value={String(sessions.length)}
         helper="Completed and in-progress practice sessions."
       />
-      <div className="rounded-3xl glass p-6 glass-hover">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-          Average Readiness
+      <div className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
+          Average readiness
         </p>
-        <p className={`mt-3 text-3xl font-semibold tracking-tight ${readinessTone(averageScore)}`}>
+        <p className={`mt-3 text-3xl font-semibold tracking-tight ${scoreColor(averageScore)}`}>
           {averageScore === null ? "-" : `${averageScore} / 100`}
         </p>
-        <p className="mt-2 text-sm text-gray-400">
+        <p className="mt-2 text-sm leading-6 text-[#536058]">
           Mean pre-interview score across sessions with readiness data.
         </p>
       </div>
       <StatCard
-        label="Most Common Gap"
+        label="Most common gap"
         value={commonGap ?? "-"}
-        helper="The open gap that appears most often in your recent sessions."
+        helper="The open gap appearing most often in recent sessions."
       />
     </section>
   );

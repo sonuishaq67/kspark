@@ -43,7 +43,16 @@ export default function ReviewPanel({
         <p className="text-sm text-gray-400">Reviewing your latest update...</p>
       )}
 
-      {reviewStatus !== "reviewing" && !review && (
+      {reviewStatus === "error" && !review && (
+        <div className="rounded-lg border border-red-700/50 bg-red-950/30 p-3">
+          <p className="text-sm font-semibold text-red-200">Live review is not connected.</p>
+          <p className="mt-1 text-sm leading-6 text-red-200/80">
+            Keep coding; feedback will resume once the interview socket reconnects.
+          </p>
+        </div>
+      )}
+
+      {reviewStatus !== "reviewing" && reviewStatus !== "error" && !review && (
         <p className="text-sm leading-6 text-gray-400">
           Start coding and pause briefly to get interviewer-style feedback.
         </p>

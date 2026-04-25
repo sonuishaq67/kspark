@@ -70,6 +70,15 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
     # Send initial phase info
     await _send_phase_update(websocket, session)
 
+    # Track the in-flight code review so newer updates can cancel older ones
+    # without blocking the inbound event loop (which also handles speech_ended).
+    review_task: asyncio.Task | None = None
+    send_lock = asyncio.Lock()
+
+    async def safe_send(payload: dict) -> None:
+        async with send_lock:
+            await _send(websocket, payload)
+
     try:
         while True:
             raw = await websocket.receive_text()
@@ -96,7 +105,7 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                     transcript = await transcribe_audio(audio_bytes)
                     session.live_transcript_buffer += " " + transcript
                     # Send partial transcript back
-                    await _send(websocket, {
+                    await safe_send({
                         "type": "transcript_chunk",
                         "text": transcript,
                         "is_final": False,
@@ -115,7 +124,7 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                 selected = await select_best_followup(session, final_transcript)
                 tracker.mark_question_selected()
 
-                await _send(websocket, {
+                await safe_send({
                     "type": "selected_question",
                     "question": selected,
                     "phase": session.current_phase.name if session.current_phase else "UNKNOWN",
@@ -135,7 +144,7 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                         tracker.mark_first_token()
                         first_token = False
                     full_response_parts.append(delta)
-                    await _send(websocket, {
+                    await safe_send({
                         "type": "interviewer_text_delta",
                         "delta": delta,
                         "is_final": False,
@@ -144,7 +153,7 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                 full_response = "".join(full_response_parts)
 
                 # Signal text complete
-                await _send(websocket, {
+                await safe_send({
                     "type": "interviewer_text_delta",
                     "delta": "",
                     "is_final": True,
@@ -157,10 +166,13 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                         if first_audio:
                             tracker.mark_first_audio()
                             first_audio = False
-                        await _send(websocket, {
+                        await safe_send({
                             "type": "interviewer_audio_chunk",
                             "data": base64.b64encode(audio_chunk).decode("utf-8"),
                         })
+
+                # Signal TTS is fully streamed so the client knows when to play.
+                await safe_send({"type": "interviewer_audio_complete"})
 
                 tracker.mark_turn_complete()
 
@@ -170,7 +182,7 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                 add_turn(session, TurnRecord(speaker="interviewer", transcript=full_response, phase=phase_name))
 
                 # Send latency metrics
-                await _send(websocket, {"type": "latency_metrics", **tracker.to_dict()})
+                await safe_send({"type": "latency_metrics", **tracker.to_dict()})
 
             elif event_type == "code_update":
                 code = event.get("code", "")
@@ -178,13 +190,15 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                 logger.debug("Code update: session=%s lang=%s len=%d", session_id, language, len(code))
 
                 record_code_update(session, code, language)
-                review = await review_code(session, ctx, code, language)
-                session.latest_code_review = review
-                await _send(websocket, {
-                    "type": "code_review",
-                    "language": language,
-                    "review": review,
-                })
+
+                # Cancel any in-flight review so we don't pile up LLM calls
+                # while the candidate keeps typing.
+                if review_task and not review_task.done():
+                    review_task.cancel()
+
+                review_task = asyncio.create_task(
+                    _run_code_review(safe_send, session, ctx, code, language)
+                )
 
             elif event_type == "mode_update":
                 new_mode = event.get("mode", "")
@@ -194,8 +208,11 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                     logger.info("Mode updated: session=%s mode=%s", session_id, new_mode)
 
             elif event_type == "end_session":
+                # Cancel any pending code review so it can't fire after report.
+                if review_task and not review_task.done():
+                    review_task.cancel()
                 report = await end_session(session_id)
-                await _send(websocket, {
+                await safe_send({
                     "type": "report_ready",
                     "session_id": session_id,
                     "report": report.model_dump(),
@@ -213,6 +230,44 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
             await _send(websocket, {"type": "error", "code": "INTERNAL_ERROR", "message": str(exc)})
         except Exception:
             pass
+    finally:
+        if review_task and not review_task.done():
+            review_task.cancel()
+            try:
+                await review_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
+
+async def _run_code_review(
+    safe_send,
+    session,
+    ctx,
+    code: str,
+    language: str,
+) -> None:
+    """
+    Run the LLM code review off the inbound event loop so it doesn't block
+    speech/turn handling. Result is dropped silently if cancelled by a newer
+    update or by disconnect.
+    """
+    try:
+        review = await review_code(session, ctx, code, language)
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        logger.error("Code review failed: %s", exc, exc_info=True)
+        return
+
+    session.latest_code_review = review
+    try:
+        await safe_send({
+            "type": "code_review",
+            "language": language,
+            "review": review,
+        })
+    except Exception as exc:
+        logger.warning("code_review send failed: %s", exc)
 
 
 async def _send(websocket: WebSocket, data: dict) -> None:

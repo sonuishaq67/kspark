@@ -86,38 +86,52 @@ MOCK_RESPONSES: dict[str, Any] = {
     },
     "report_generator": {
         "summary": (
-            "You showed strong API understanding and project ownership. "
-            "Your main improvement areas are database reasoning, scaling trade-offs, "
-            "and measurable impact. The follow-up on 10x traffic revealed a gap in "
-            "horizontal scaling strategy that is worth focused practice."
+            "You demonstrated strong project ownership and clear communication structure throughout the interview. "
+            "Your API design explanations were confident and well-organized. The main areas for improvement are "
+            "database scaling strategies and providing measurable impact metrics. When probed about handling 10x "
+            "traffic, you focused on application-layer solutions but didn't address database horizontal scaling or "
+            "sharding, which is critical for senior-level roles."
         ),
         "strengths": [
-            "Clear project ownership - you described your specific role and decisions.",
-            "Good API-level thinking - you explained REST design choices confidently.",
-            "Strong communication structure - answers were organized and easy to follow.",
+            "Clear project ownership - you consistently described your specific role and technical decisions, not just team outcomes",
+            "Strong communication structure - answers followed a logical flow (context → approach → outcome) without prompting",
+            "Good API-level thinking - you explained REST design choices with confidence and justified your decisions",
+            "Effective use of examples - when discussing the caching optimization, you provided concrete context about the problem",
         ],
         "gaps": [
             {
-                "label": "Database scaling",
+                "label": "Database horizontal scaling",
                 "status": "open",
                 "evidence": (
-                    "Did not address horizontal scaling or sharding when asked "
-                    "about 10x traffic."
+                    "When asked 'How would your system handle 10x the current traffic?', you mentioned load balancers "
+                    "and caching but did not address database sharding, read replicas, or partitioning strategies. "
+                    "This is a critical gap for senior backend roles."
                 ),
             },
             {
-                "label": "Metrics / measurable impact",
+                "label": "Quantifiable impact metrics",
                 "status": "improved",
                 "evidence": (
-                    "After probing, mentioned 40% query improvement but lacked "
-                    "baseline comparison."
+                    "Initially described project impact without numbers. After probing with 'Can you give me a specific metric?', "
+                    "you mentioned 40% query improvement, but didn't provide baseline context (e.g., '40% reduction from 200ms to 120ms'). "
+                    "Showed improvement but needs more precision."
                 ),
             },
             {
                 "label": "System design trade-offs",
                 "status": "open",
                 "evidence": (
-                    "Trade-offs were mentioned but not explained with specific reasoning."
+                    "You mentioned choosing PostgreSQL over MongoDB but didn't explain the specific trade-offs considered "
+                    "(e.g., ACID guarantees vs. horizontal scaling, schema flexibility vs. query performance). "
+                    "Senior engineers are expected to articulate the 'why' behind architectural decisions."
+                ),
+            },
+            {
+                "label": "Distributed systems patterns",
+                "status": "open",
+                "evidence": (
+                    "No mention of distributed systems concepts like eventual consistency, CAP theorem, or consensus algorithms "
+                    "when discussing the microservices architecture. This suggests a gap in distributed systems fundamentals."
                 ),
             },
         ],
@@ -132,26 +146,34 @@ MOCK_RESPONSES: dict[str, Any] = {
             {
                 "question": "How would your system handle 10x the current traffic?",
                 "reason": (
-                    "Original answer described the API but did not mention database "
-                    "scaling or load distribution."
+                    "Original answer focused on application-layer solutions (load balancing, caching) but did not address "
+                    "database scaling, which is typically the bottleneck at scale. Wanted to probe database architecture knowledge."
                 ),
                 "candidate_response_quality": "partial",
             },
             {
                 "question": "Can you give me a specific metric from that project?",
                 "reason": (
-                    "Candidate mentioned impact but without any numbers or "
-                    "before/after comparison."
+                    "Candidate mentioned 'significant improvement' and 'better performance' but without quantifiable data. "
+                    "Senior engineers should have metrics readily available to demonstrate impact."
                 ),
                 "candidate_response_quality": "partial",
             },
+            {
+                "question": "What trade-offs did you consider when choosing PostgreSQL?",
+                "reason": (
+                    "Candidate stated the choice but didn't explain the reasoning. Wanted to understand depth of "
+                    "architectural decision-making and awareness of trade-offs."
+                ),
+                "candidate_response_quality": "weak",
+            },
         ],
         "next_practice_plan": [
-            "Review database indexing and caching strategies - practice explaining when to use each.",
-            "Prepare one scale-focused project story: describe how you would handle 10x traffic on a system you built.",
-            "Add measurable impact to your resume examples - every project story needs a number.",
-            "Practice explaining technical trade-offs out loud: 'I chose X over Y because...'",
-            "Study horizontal vs vertical scaling and be ready to draw a simple architecture diagram.",
+            "Study database scaling patterns: read about sharding strategies (hash-based, range-based, geographic), read replicas, and write scaling. Practice explaining when to use each approach.",
+            "Prepare a 'scale story' for your main project: write out how you would handle 10x traffic, covering application layer, database layer, and infrastructure. Practice delivering this in 2-3 minutes.",
+            "Add quantifiable metrics to every project story: go through your resume and add specific numbers (latency improvements, throughput increases, cost savings, user impact). Format as 'reduced X from Y to Z'.",
+            "Practice the trade-off framework: for each technical decision in your projects, write down 2-3 alternatives you considered and why you chose your approach. Practice explaining this out loud.",
+            "Review distributed systems fundamentals: study CAP theorem, eventual consistency, and consensus algorithms (Raft, Paxos). Be ready to explain how these apply to your microservices architecture.",
         ],
     }
 }
