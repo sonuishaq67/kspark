@@ -1,65 +1,36 @@
-# Web — Next.js 14 Frontend
-
-This directory contains the Next.js 14 App Router frontend.
-
-## Ownership by Route
-
-### (p1)/ — Person 1
-- `/onboarding` — Account creation, resume upload, JD parsing, role/company selection, diagnostic
-- `/dashboard` — Level bar, streak, recent sessions, sparklines, trend indicators
-- `/profile` — User profile and earned achievements
-- `/settings` — Audio retention, notifications, role/company change
-
-### (p2)/ — Person 2
-- `/interview/[sessionId]` — Live voice interview (mic controls, transcript, AI indicator)
-- `/report/[sessionId]` — Post-session feedback (radar chart, TLDR, full breakdown, 1-week plan)
-
-### (p3)/ — Person 3
-- `/practice` — Drill picker, attempt history, score deltas
-- `/learn/[sessionId]` — Guided learning chat (SSE-streamed Socratic responses)
-- `/code/[sessionId]` — Live coding round (CodeMirror 6, run/submit, test results)
-- `/achievements` — Earned + locked achievements with criteria
-
-## Component Ownership
-
-### components/shared/ — 🔒 Shared (P1 seeds week 1)
-- Button, Input, Layout, Nav
-- After week 1, additions require group check
-
-### components/p1/
-- OnboardingWizard, ResearchBriefCard, DiagnosticQuiz, DashboardCard
-
-### components/p2/
-- MicControls, TranscriptView, RadarChart, FeedbackCard, VoicePlayer
-
-### components/p3/
-- DrillPicker, XPBar, AchievementBadge, CodeEditor, StreakIndicator
-
-## Tech Stack
-
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- Recharts (for radar chart)
-- CodeMirror 6 (for code editor)
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
+First, run the development server:
+
 ```bash
-npm install
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## API Client Generation
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-npm run generate:api
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This reads `proto/*.yaml` and generates typed clients in `lib/api/`.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Rules
+## Learn More
 
-1. **Never edit files in another person's route group**
-2. **Shared components** — Check with team before adding to `components/shared/`
-3. **API clients** — Auto-generated from proto, never hand-edit `lib/api/`
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

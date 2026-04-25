@@ -1,0 +1,24 @@
+questions:
+  - id: q1_behavioral
+    topic: behavioral
+    text: "Tell me about a time you had to deliver under a tight deadline."
+    gap_hints:
+      - "specific timeline mentioned"
+      - "your personal contribution vs team"
+      - "what you'd do differently"
+
+  - id: q2_technical
+    topic: technical_concept
+    text: "Explain how you'd design a rate limiter."
+    gap_hints:
+      - "token bucket or leaky bucket algorithm named"
+      - "distributed vs single-node tradeoff"
+      - "Redis or in-memory choice justified"
+
+  - id: q3_system_design
+    topic: system_design
+    text: "How would you scale a URL shortener to 1 billion URLs?"
+    gap_hints:
+      - "hashing strategy"
+      - "database choice justified"
+      - "read vs write scaling separated"

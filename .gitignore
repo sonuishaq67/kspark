@@ -53,6 +53,11 @@ Thumbs.db
 
 # Data
 data/leetcode.sqlite
+data/interview_coach.db
+data/*.db
+
+# Python virtual envs
+backend/.venv/
 
 # Logs
 *.log

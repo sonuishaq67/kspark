@@ -1,127 +1,187 @@
-# Interview Coach
+# RoleReady AI
 
-A voice-driven AI interview preparation platform with multi-agent orchestration, dynamic company research, live coding, multimodal scoring, and game-style progression.
+> Compare your resume to the job description, find your gaps, and practice the interview that matters — without getting answers ghostwritten for you.
 
-## 🚀 Quick Start
-
-**New to the project?** Read [`GETTING_STARTED.md`](GETTING_STARTED.md) first.
-
-**Team member?** Check your ownership in [`TEAM_DIVISION.md`](TEAM_DIVISION.md).
-
-```bash
-# 1. Clone and setup
-git clone <repo-url>
-cd interview-coach
-cp .env.example .env  # Add your API keys
-
-# 2. Start infrastructure
-docker-compose up -d
-
-# 3. Run migrations and seed data
-make setup
-
-# 4. Start your services (see TEAM_DIVISION.md for your services)
-# 5. Start web frontend
-cd web && npm install && npm run dev
-```
-
-## 📁 Project Structure
-
-```
-interview-coach/
-├── services/
-│   ├── shared/           # 🔒 Shared models (P1 owns)
-│   ├── p1_platform/      # 👤 P1: Gateway, research, persona, reasoning
-│   ├── p2_interview/     # 👤 P2: Orchestrator, speech, scaffolding
-│   └── p3_learning/      # 👤 P3: Practice, learning, coding, progression
-├── web/                  # Next.js frontend (split by route ownership)
-├── proto/                # 🔒 API contracts (finalize Day 1)
-├── config/               # YAML configs (split by owner)
-├── prompts/              # LLM prompts (split by owner)
-├── infra/                # 👤 P1: Docker, migrations, Terraform
-└── docs/                 # Spec files (requirements, design, tasks)
-```
-
-## 📚 Documentation
-
-### For Implementation
-- [`TEAM_DIVISION.md`](TEAM_DIVISION.md) — Ownership boundaries and sync points
-- [`GETTING_STARTED.md`](GETTING_STARTED.md) — Setup instructions
-- [`tasks.md`](tasks.md) — Implementation task list
-
-### For Understanding
-- [`requirements.md`](requirements.md) — User stories with acceptance criteria
-- [`design.md`](design.md) — Architecture, components, sequence flows, ADRs
-- [`product.md`](product.md) — Vision, principles, the bets we're making
-- [`tech.md`](tech.md) — Stack, constraints, integration boundaries
-
-## Foundational bets (read these before anything else)
-
-1. **The orchestrator listens.** A stateful orchestrator owns session state and a thread tracker. Sub-agents handle individual questions with focused context. This is the differentiator vs scripted-feeling competitors.
-2. **The agent scaffolds, never ghostwrites.** It refuses model-answer requests and offers Socratic hints instead. This is enforced in prompts and validated in code.
-3. **Progression is earned, not granted.** XP, levels, and unlocks come from demonstrated skill against a per-user candidate model — not session count.
-4. **Specs and configs drive behavior.** Personas, company profiles, achievement criteria, and rubrics live in editable YAML. Editing them changes the product without code changes.
-5. **Local where it makes sense.** Code execution, the question bank, and session caches run locally. Only voice (ElevenLabs), reasoning (Anthropic), emotion (Hume), and research (Tavily) go to external APIs.
-
-## What's explicitly out of scope
-
-- Video capture, gaze tracking, posture and affect analysis (deferred to a follow-up spec)
-- Native mobile apps (web responsive only)
-- Multilingual support (English only)
-- Real-time assistance during actual non-practice interviews — this is a practice tool, not a copilot
-- Peer mock interview matching and community features
-
-- [`structure.md`](structure.md) — Monorepo layout and naming conventions
-
-## 🎯 Foundational Bets
-
-1. **The orchestrator listens** — Stateful orchestrator + per-question sub-agents (not scripted)
-2. **Scaffolding, not ghostwriting** — Agent refuses model answers, offers Socratic hints
-3. **Progression is earned** — XP/levels based on demonstrated skill, not session count
-4. **Configs drive behavior** — Personas, companies, rubrics in YAML (no code changes)
-5. **Local where it matters** — Judge0, LeetCode bank, Redis cache run locally
-
-## 👥 Team Ownership
-
-| Person | Services | Web Routes | Config |
-|--------|----------|------------|--------|
-| **P1** | gateway, research, persona, reasoning | /onboarding, /dashboard, /profile, /settings | companies/ |
-| **P2** | orchestrator, speech, scaffolding | /interview, /report | personas/, modes/, formats/, rubrics.yaml |
-| **P3** | practice, learning, coding, progression | /practice, /learn, /code, /achievements | achievements.yaml, practice_drills.yaml |
-
-See [`TEAM_DIVISION.md`](TEAM_DIVISION.md) for detailed responsibilities and sync points.
-
-## 🔧 Tech Stack
-
-- **Frontend:** Next.js 14, TypeScript, Tailwind, CodeMirror 6
-- **Edge:** Node.js 20 + Fastify (WebSocket)
-- **Services:** Python 3.11 + FastAPI
-- **Data:** Postgres 16 + pgvector, Redis 7, SQLite (LeetCode)
-- **External APIs:** Anthropic, ElevenLabs, Deepgram, Hume, Tavily
-- **Local:** Judge0 (Docker)
-
-## 📋 What's Out of Scope
-
-- Video capture, gaze tracking, posture analysis (deferred)
-- Native mobile apps (web responsive only)
-- Multilingual support (English only)
-- Real-time copilot during actual interviews (practice tool only)
-- Peer mock interview matching
-
-## 🤝 Contributing
-
-1. Check [`TEAM_DIVISION.md`](TEAM_DIVISION.md) for your ownership
-2. Never edit files outside your ownership without coordination
-3. Migrations: Only P1 touches `.sql` files (others file requests)
-4. Shared code: Changes require PR review from all 3
-5. Proto contracts: Agreed on Day 1, changes need all 3 to approve
-
-## 📞 Support
-
-- Daily standup: 15 min sync on blockers
-- Slack/Discord: `#p1-platform`, `#p2-interview`, `#p3-learning`, `#integration`
-- PR reviews: Tag relevant person for their owned files only
+**Hackathon:** Kiro Spark Challenge  
+**Stack:** FastAPI + SQLite + Next.js 14 + TypeScript + Tailwind + Groq LLM
 
 ---
 
-**Ready to start?** → [`GETTING_STARTED.md`](GETTING_STARTED.md)
+## What It Does
+
+1. You paste a job description and your resume.
+2. The app compares them and shows a **readiness gap map** — strong matches, partial matches, missing evidence.
+3. You get a **prep brief** before the interview starts.
+4. The AI runs an **adaptive mock interview** that probes your exact weak areas.
+5. When you ask for a perfect answer, the AI **refuses and coaches** instead.
+6. After the session you get a **learning-focused report** with scores, gap analysis, and a next practice plan.
+7. The **dashboard** shows your session history.
+
+---
+
+## Quick Start
+
+```bash
+# 1. Clone and configure
+git clone <repo-url>
+cd interview-coach
+cp .env.example .env   # fill in GROQ_API_KEY (optional — see mock mode below)
+
+# 2. Start everything
+make up
+
+# 3. Open http://localhost:3000
+```
+
+### No API keys? Run in full mock mode
+
+```bash
+MOCK_LLM=1 make dev
+```
+
+Mock mode runs the complete flow — gap analysis, interview, report — with deterministic demo data. No Groq, no Deepgram, no ElevenLabs needed.
+
+---
+
+## Environment Variables
+
+```bash
+# .env
+GROQ_API_KEY=your_key_here          # LLM — leave blank to auto-enable mock mode
+DEEPGRAM_API_KEY=your_key_here      # ASR (optional — voice mode only)
+ELEVENLABS_API_KEY=your_key_here    # TTS (optional — voice mode only)
+ELEVENLABS_VOICE_ID=your_voice_id   # TTS voice (optional)
+MOCK_LLM=0                          # Set to 1 to force mock mode
+MOCK_ASR=0                          # Set to 1 to use hardcoded transcripts
+MOCK_TTS=0                          # Set to 1 to skip audio (text-only)
+SQLITE_PATH=data/interview_coach.db
+```
+
+---
+
+## Demo Flow (Judge Path)
+
+1. Open `http://localhost:3000` → lands on `/practice/setup`
+2. Enter target role, paste a job description, paste a resume (or click "Load Demo Data")
+3. Click "Analyze My Readiness" → see the gap map
+4. Review the prep brief → click "Start Interview"
+5. Answer the first question vaguely
+6. AI detects the missing gap and asks a targeted follow-up
+7. Type: "Can you write the perfect answer for me?"
+8. AI refuses → **Agency Guardrail Activated** badge appears
+9. Click "Finish Interview" → see the full report
+10. Navigate to `/dashboard` → see session history
+
+---
+
+## MVP Scope
+
+| Feature | Status |
+|---------|--------|
+| JD + resume input | ✅ MVP |
+| Readiness gap map | ✅ MVP |
+| Prep brief | ✅ MVP |
+| Adaptive typed interview | ✅ MVP |
+| Ghostwriting refusal guardrail | ✅ MVP |
+| Live gap tracking panel | ✅ MVP |
+| Final feedback report | ✅ MVP |
+| Dashboard with session history | ✅ MVP |
+| Mock/demo mode (no API keys) | ✅ MVP |
+| SQLite persistence | ✅ MVP |
+| Voice mode (ASR/TTS) | 🔶 Optional |
+| Live coding round | 🚫 Roadmap |
+| XP / levels / streaks | 🚫 Roadmap |
+| Recruiter dashboard | 🚫 Roadmap |
+| Full auth / accounts | 🚫 Roadmap |
+| Postgres / Redis | 🚫 Roadmap |
+
+---
+
+## Project Structure
+
+```
+interview-coach/
+├── backend/                    # FastAPI — single process
+│   ├── main.py                 # App entry, routes
+│   ├── api/
+│   │   ├── sessions.py         # Session + turn + report endpoints
+│   │   └── readiness.py        # Gap analysis endpoint (NEW)
+│   ├── db/                     # SQLite schema + async queries
+│   ├── llm/                    # Groq client + prompt loader + mock responses
+│   ├── orchestrator/           # State machine, sub-agent, thread tracker
+│   ├── speech/                 # ASR + TTS + WebSocket handler
+│   ├── config/                 # YAML config loader
+│   ├── questions/              # Demo question loader
+│   └── tests/                  # pytest unit tests
+├── web/                        # Next.js 14 frontend
+│   ├── app/
+│   │   ├── practice/           # Step-based flow (NEW)
+│   │   │   ├── setup/          # Step 1: JD + resume input
+│   │   │   ├── gap-map/        # Step 2: Readiness gap map
+│   │   │   ├── prep-brief/     # Step 3: Prep brief
+│   │   │   ├── interview/      # Step 4: Adaptive interview room
+│   │   │   └── report/         # Step 5: Feedback report
+│   │   ├── dashboard/          # Session history
+│   │   └── interview/          # Legacy voice interview (preserved)
+│   ├── components/
+│   │   ├── roleready/          # New RoleReady components (NEW)
+│   │   ├── p2/                 # Legacy interview components
+│   │   └── shared/             # Layout, nav
+│   └── lib/                    # API client, WebSocket hook
+├── prompts/                    # LLM prompt templates
+├── config/                     # Persona YAML configs
+├── database/
+│   ├── migrations/             # SQL migrations
+│   └── seed_data/              # Demo data
+├── evals/                      # Golden test cases
+├── docker-compose.yml
+├── Makefile
+└── .env.example
+```
+
+---
+
+## How We Used Kiro
+
+- **Steering docs** (`.kiro/steering/`) lock product direction, tech stack, responsible AI principles, and hackathon scope — so every decision stays aligned.
+- **Specs** (`.kiro/specs/roleready-ai-mvp/`) break the build into three independent workstreams with clear API contracts between them.
+- **Task files** divide work by person with zero overlap — Ishaq owns gap analysis, Shivam owns the interview loop, Vard owns reporting and dashboard.
+- **Mock mode** and eval cases keep the demo reliable regardless of API key availability.
+- Kiro helped turn a broad platform idea into a focused, testable hackathon MVP with a clear demo path.
+
+---
+
+## Team Task Files
+
+| Person | Workstream | File |
+|--------|-----------|------|
+| Ishaq | JD/Resume Gap Engine | `.kiro/specs/roleready-ai-mvp/tasks-ishaq.md` |
+| Shivam | Adaptive Interview Loop | `.kiro/specs/roleready-ai-mvp/tasks-shivam.md` |
+| Vard | Dashboard & Reporting | `.kiro/specs/roleready-ai-mvp/tasks-vard.md` |
+
+---
+
+## Development Commands
+
+```bash
+make dev        # Start backend + frontend locally (no Docker)
+make up         # docker-compose up --build
+make down       # docker-compose down
+make logs       # Tail container logs
+make test       # Run pytest
+```
+
+### Local (no Docker)
+
+```bash
+# Backend
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+
+# Frontend
+cd web
+npm install
+npm run dev     # http://localhost:3000
+```

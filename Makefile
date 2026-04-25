@@ -1,45 +1,66 @@
-.PHONY: help setup migrate seed test clean
+.PHONY: help dev up down build logs test clean backend web
 
 help:
-	@echo "Interview Coach - Makefile Commands"
+	@echo "Interview Coach — Hackathon Stack"
 	@echo ""
-	@echo "  make setup      - Initial setup (Docker, migrations, seed data)"
-	@echo "  make migrate    - Run database migrations"
-	@echo "  make seed       - Seed question banks"
-	@echo "  make test       - Run all tests"
-	@echo "  make clean      - Clean up containers and data"
+	@echo "  make dev        - Run backend + frontend locally (no Docker)"
+	@echo "  make up         - Start with Docker Compose"
+	@echo "  make down       - Stop Docker Compose"
+	@echo "  make build      - Build Docker images"
+	@echo "  make logs       - Tail all container logs"
+	@echo "  make test       - Run backend unit tests"
+	@echo "  make clean      - Remove containers, volumes, SQLite file"
+	@echo ""
+	@echo "  MOCK_ASR=1 make dev   - Run without Deepgram (offline mode)"
+	@echo "  MOCK_TTS=1 make dev   - Run without ElevenLabs (text-only mode)"
 
-setup:
-	@echo "Starting infrastructure..."
+# ── Docker ───────────────────────────────────────────────────────────────────
+
+build:
+	docker-compose build
+
+up:
+	mkdir -p data
+	docker-compose up
+
+up-detached:
+	mkdir -p data
 	docker-compose up -d
-	@echo "Waiting for Postgres..."
-	sleep 5
-	@echo "Running migrations..."
-	$(MAKE) migrate
-	@echo "Seeding data..."
-	$(MAKE) seed
-	@echo "Setup complete!"
 
-migrate:
-	@echo "Running database migrations..."
-	python infra/migrations/run_migrations.py
+down:
+	docker-compose down
 
-seed:
-	@echo "Seeding question bank..."
-	python infra/seed/question_bank/import.py
-	@echo "Downloading LeetCode dataset..."
-	python infra/seed/leetcode/import.py
+logs:
+	docker-compose logs -f
+
+# ── Local dev (no Docker) ────────────────────────────────────────────────────
+
+dev: backend web
+
+backend:
+	@echo "Starting backend on :8000 ..."
+	mkdir -p data
+	cd backend && \
+	  python -m venv .venv 2>/dev/null || true && \
+	  . .venv/bin/activate && \
+	  pip install -q -r requirements.txt && \
+	  uvicorn main:app --reload --port 8000
+
+web:
+	@echo "Starting frontend on :3000 ..."
+	cd web && npm install --silent && npm run dev
+
+# ── Tests ────────────────────────────────────────────────────────────────────
 
 test:
-	@echo "Running tests..."
-	cd services/p1_platform && pytest
-	cd services/p2_interview && pytest
-	cd services/p3_learning && pytest
-	cd web && npm test
+	cd backend && \
+	  . .venv/bin/activate 2>/dev/null || python -m venv .venv && . .venv/bin/activate && \
+	  pip install -q -r requirements.txt && \
+	  pytest tests/ -v
+
+# ── Cleanup ──────────────────────────────────────────────────────────────────
 
 clean:
-	@echo "Stopping containers..."
 	docker-compose down -v
-	@echo "Cleaning data..."
-	rm -f data/leetcode.sqlite
-	@echo "Clean complete!"
+	rm -f data/interview_coach.db
+	@echo "Cleaned."
