@@ -577,27 +577,35 @@ export default function PracticeSetupPage() {
         )}
 
         <div className="space-y-3">
-          {resume.trim() && jobDescription.trim() && (
-            <button
-              onClick={handleAnalyzeReadiness}
-              disabled={loading}
-              className="w-full rounded-lg border border-[#17211b] bg-white py-4 text-sm font-semibold text-[#17211b] transition hover:bg-[#f7f5ef] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading && progress.includes("Analyzing") ? progress : "Analyze readiness first"}
-            </button>
-          )}
-
-          <button
-            onClick={handleStart}
-            disabled={loading}
-            className="w-full rounded-lg bg-[#17211b] py-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2b3a31] disabled:cursor-not-allowed disabled:opacity-60"
+          <div
+            className={
+              resume.trim() && jobDescription.trim()
+                ? "grid gap-3 sm:grid-cols-2"
+                : "grid gap-3"
+            }
           >
-            {loading && !progress.includes("Analyzing")
-              ? progress || "Starting session..."
-              : resume.trim() && jobDescription.trim()
-                ? "Skip to interview"
-                : `Start ${selectedType.label}`}
-          </button>
+            {resume.trim() && jobDescription.trim() && (
+              <button
+                onClick={handleAnalyzeReadiness}
+                disabled={loading}
+                className="w-full rounded-lg border border-[#17211b] bg-white py-4 text-sm font-semibold text-[#17211b] transition hover:bg-[#f7f5ef] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading && progress.includes("Analyzing") ? progress : "Analyze resume"}
+              </button>
+            )}
+
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="w-full rounded-lg bg-[#17211b] py-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2b3a31] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading && !progress.includes("Analyzing")
+                ? progress || "Starting session..."
+                : resume.trim() && jobDescription.trim()
+                  ? "Skip to interview"
+                  : `Start ${selectedType.label}`}
+            </button>
+          </div>
 
           {resume.trim() && jobDescription.trim() && (
             <p className="text-center text-xs text-[#667169]">

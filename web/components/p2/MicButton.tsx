@@ -27,19 +27,19 @@ export default function MicButton({
       disabled={!isConnected}
       aria-label={isRecording ? "Stop recording" : "Start recording"}
       className={`
-        relative flex items-center justify-center w-16 h-16 rounded-full
+        relative flex h-16 w-16 items-center justify-center rounded-full text-white
         transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
-        focus:ring-offset-gray-900 disabled:opacity-40 disabled:cursor-not-allowed
+        focus:ring-offset-[#f4f1ea] disabled:cursor-not-allowed disabled:opacity-40
         ${
           isRecording
-            ? "bg-red-600 hover:bg-red-700 focus:ring-red-500 shadow-lg shadow-red-900/50"
-            : "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+            ? "bg-rose-700 shadow-lg shadow-rose-900/20 hover:bg-rose-800 focus:ring-rose-500"
+            : "bg-[#17211b] hover:bg-[#2b3a31] focus:ring-[#17211b]"
         }
       `}
     >
       {/* Pulsing ring when recording */}
       {isRecording && (
-        <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" />
+        <span className="absolute inset-0 animate-ping rounded-full bg-rose-500 opacity-25" />
       )}
 
       {/* Mic icon */}
@@ -47,7 +47,7 @@ export default function MicButton({
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="currentColor"
-        className="w-7 h-7 text-white relative z-10"
+        className="relative z-10 h-7 w-7 text-white"
       >
         {isRecording ? (
           // Stop square

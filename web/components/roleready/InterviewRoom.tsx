@@ -163,19 +163,19 @@ export default function InterviewRoom({
   })();
 
   return (
-    <div className="relative flex h-[calc(100vh-10rem)] min-h-[32rem] flex-col items-center overflow-hidden">
+    <div className="relative flex h-[calc(100vh-10rem)] min-h-[32rem] flex-col items-center overflow-hidden rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] shadow-sm">
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
-      <div className="flex w-full items-center justify-between px-2 py-2">
+      <div className="flex w-full flex-wrap items-center justify-between gap-3 border-b border-[#17211b]/10 bg-white px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
             {phaseLabel(agent.currentPhase || phases[0])}
           </span>
           {phases.length > 0 && (
             <div className="flex gap-1">
               {phases.map((_, i) => (
                 <div key={i} className={`h-1 w-5 rounded-full transition-all ${
-                  i === 0 ? "bg-indigo-400" : "bg-gray-800"
+                  i === 0 ? "bg-emerald-600" : "bg-[#17211b]/10"
                 }`} />
               ))}
             </div>
@@ -183,11 +183,11 @@ export default function InterviewRoom({
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-sm font-semibold tabular-nums ${
-            timeRemaining < 120 ? "text-red-400" : "text-gray-400"
+            timeRemaining < 120 ? "text-rose-700" : "text-[#17211b]"
           }`}>
             {formatTime(timeRemaining)}
           </span>
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-[#667169]">
             {sessionType.replace(/_/g, " ")} · {mode}
           </span>
         </div>
@@ -224,21 +224,21 @@ export default function InterviewRoom({
 
         {/* Live transcript while user speaks */}
         {agent.status === "listening" && agent.transcript && (
-          <p className="max-w-md text-center text-sm italic leading-relaxed text-indigo-200/70">
+          <p className="max-w-md text-center text-sm italic leading-relaxed text-[#536058]">
             &ldquo;{agent.transcript.trim()}&rdquo;
           </p>
         )}
 
         {/* Agent message */}
         {agent.status !== "listening" && displayText && (
-          <div className="max-w-lg rounded-2xl border border-gray-800 bg-gray-900/60 px-5 py-4 text-center">
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-indigo-400">
+          <div className="max-w-lg rounded-lg border border-[#17211b]/10 bg-white px-5 py-4 text-center shadow-sm">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#667169]">
               Interviewer
             </p>
-            <p className="text-sm leading-relaxed text-gray-100">
+            <p className="text-sm leading-relaxed text-[#17211b]">
               {displayText}
               {agent.status === "speaking" && (
-                <span className="ml-1 inline-block h-3 w-0.5 animate-pulse bg-indigo-400" />
+                <span className="ml-1 inline-block h-3 w-0.5 animate-pulse bg-[#17211b]" />
               )}
             </p>
           </div>
@@ -252,7 +252,7 @@ export default function InterviewRoom({
           {/* Transcript toggle */}
           <button
             onClick={() => setShowTranscript((v) => !v)}
-            className="flex items-center gap-2 rounded-full border border-gray-800 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-gray-700 hover:text-gray-300"
+            className="flex items-center gap-2 rounded-lg border border-[#17211b]/15 bg-white px-4 py-2 text-xs font-semibold text-[#536058] transition hover:text-[#17211b]"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
               <path fillRule="evenodd" d="M2 5a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm1 4a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H3Z" clipRule="evenodd" />
@@ -265,14 +265,14 @@ export default function InterviewRoom({
             {started && agent.status !== "idle" && (
               <button
                 onClick={handleStop}
-                className="rounded-full border border-gray-700 px-4 py-2 text-xs text-gray-400 transition-colors hover:border-gray-600 hover:text-gray-200"
+                className="rounded-lg border border-[#17211b]/15 bg-white px-4 py-2 text-xs font-semibold text-[#536058] transition hover:text-[#17211b]"
               >
                 Pause
               </button>
             )}
             <button
               onClick={handleEndSession}
-              className="flex items-center gap-2 rounded-full border border-gray-800 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-red-800/50 hover:text-red-400"
+              className="flex items-center gap-2 rounded-lg border border-[#17211b]/15 bg-white px-4 py-2 text-xs font-semibold text-[#536058] transition hover:border-rose-300 hover:text-rose-700"
             >
               End Session
             </button>
@@ -284,15 +284,15 @@ export default function InterviewRoom({
       {showTranscript && (
         <div
           ref={transcriptRef}
-          className="absolute bottom-28 left-4 right-4 max-h-60 overflow-y-auto rounded-2xl border border-gray-800 bg-gray-950/95 p-4 backdrop-blur"
+          className="absolute bottom-28 left-4 right-4 max-h-60 overflow-y-auto rounded-lg border border-[#17211b]/10 bg-white/95 p-4 shadow-lg backdrop-blur"
         >
           <div className="flex flex-col gap-2">
             {conversation.map((turn, i) => (
               <div key={i} className={`flex ${turn.speaker === "candidate" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                <div className={`max-w-[80%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
                   turn.speaker === "candidate"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-800 text-gray-200"
+                    ? "bg-[#17211b] text-white"
+                    : "border border-[#17211b]/10 bg-[#f7f5ef] text-[#17211b]"
                 }`}>
                   {turn.text}
                 </div>
@@ -304,17 +304,17 @@ export default function InterviewRoom({
 
       {/* ── Session complete overlay ─────────────────────────────────────── */}
       {agent.isSessionComplete && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-950/90 backdrop-blur">
-          <div className="mx-4 w-full max-w-sm rounded-3xl border border-indigo-700/40 bg-gray-900 p-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#f4f1ea]/90 backdrop-blur">
+          <div className="mx-4 w-full max-w-sm rounded-lg border border-[#17211b]/10 bg-white p-8 text-center shadow-lg">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#667169]">
               Session Complete
             </p>
-            <p className="mt-3 text-lg text-gray-300">Generating your report...</p>
+            <p className="mt-3 text-lg font-medium text-[#17211b]">Generating your report...</p>
             <button
               onClick={() => router.push(`/practice/report?session_id=${sessionId}`)}
-              className="mt-6 w-full rounded-full bg-indigo-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+              className="mt-6 w-full rounded-lg bg-[#17211b] py-3 text-sm font-semibold text-white transition hover:bg-[#2b3a31]"
             >
-              View Report →
+              View Report
             </button>
           </div>
         </div>
@@ -322,7 +322,7 @@ export default function InterviewRoom({
 
       {/* Errors */}
       {agent.error && (
-        <div className="absolute bottom-32 left-4 right-4 rounded-xl border border-red-800/50 bg-red-950/40 px-4 py-3 text-center text-xs text-red-300">
+        <div className="absolute bottom-32 left-4 right-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-center text-xs font-medium text-rose-800">
           {agent.error}
         </div>
       )}

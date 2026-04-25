@@ -33,7 +33,7 @@ function InterviewContent() {
   if (!sessionId) {
     return (
       <Layout>
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-8 text-sm text-gray-400">
+        <div className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-8 text-sm text-[#536058] shadow-sm">
           Redirecting to setup...
         </div>
       </Layout>
@@ -70,7 +70,7 @@ export default function PracticeInterviewPage() {
     <Suspense
       fallback={
         <Layout>
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-8 text-sm text-gray-400">
+          <div className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-8 text-sm text-[#536058] shadow-sm">
             Loading interview...
           </div>
         </Layout>
