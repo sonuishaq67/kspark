@@ -16,53 +16,72 @@ export default function InterviewPage() {
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [ending, setEnding] = useState(false);
+  const [currentQuestionIndex] = useState(0);
 
   const {
-    transcript,
+    liveTranscript,
     conversation,
-    sessionState,
-    currentQuestionIndex,
-    isAgentSpeaking,
-    isRecording,
+    isComplete,
+    currentPhase,
+    isThinking,
     isConnected,
-    startRecording,
-    stopRecording,
+    sendSpeechStarted,
+    sendSpeechEnded,
     disconnect,
+    status,
   } = useInterviewSocket(sessionId);
+
+  // Track recording state locally (browser mic)
+  const [isRecording, setIsRecording] = useState(false);
 
   // Load questions for the question card
   useEffect(() => {
     api.listQuestions().then(setQuestions).catch(console.error);
   }, []);
 
-  // Auto-navigate to report when session closes
+  // Auto-navigate to report when session ends
   useEffect(() => {
-    if (sessionState === "ENDED") {
+    if (isComplete) {
       router.push(`/report/${sessionId}`);
     }
-  }, [sessionState, sessionId, router]);
+  }, [isComplete, sessionId, router]);
+
+  const handleStartRecording = () => {
+    setIsRecording(true);
+    sendSpeechStarted();
+  };
+
+  const handleStopRecording = () => {
+    setIsRecording(false);
+    // In text-only mode, use liveTranscript as final
+    if (liveTranscript.trim()) {
+      sendSpeechEnded(liveTranscript.trim());
+    }
+  };
 
   const handleEndSession = async () => {
     if (ending) return;
     setEnding(true);
-    stopRecording();
     disconnect();
     try {
       await api.endSession(sessionId);
     } catch {
-      // ignore — navigate anyway
+      // ignore
     }
     router.push(`/report/${sessionId}`);
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-  const isThinking = sessionState === "THINKING";
-  const isClosing = sessionState === "CLOSING";
+
+  // Map new ConversationTurn to the format TranscriptPanel expects
+  const legacyConversation = conversation.map((t) => ({
+    speaker: t.speaker === "interviewer" ? ("agent" as const) : ("candidate" as const),
+    text: t.text,
+  }));
 
   return (
     <Layout>
       <div className="flex flex-col h-[calc(100vh-8rem)] gap-4">
-        {/* Question card */}
         {currentQuestion && (
           <QuestionCard
             questionText={currentQuestion.text}
@@ -72,42 +91,28 @@ export default function InterviewPage() {
           />
         )}
 
-        {/* Status bar */}
         <div className="flex items-center gap-3 text-xs text-gray-500">
-          <span
-            className={`w-2 h-2 rounded-full ${
-              isConnected ? "bg-green-500" : "bg-gray-600"
-            }`}
-          />
-          <span>{isConnected ? "Connected" : "Connecting..."}</span>
-          {isAgentSpeaking && (
-            <span className="text-indigo-400 animate-pulse">● AI speaking</span>
-          )}
-          {isThinking && (
-            <span className="text-yellow-400 animate-pulse">● Thinking...</span>
-          )}
-          {isClosing && (
-            <span className="text-green-400">All questions complete</span>
-          )}
+          <span className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500" : "bg-gray-600"}`} />
+          <span>{isConnected ? "Connected" : status === "connecting" ? "Connecting..." : "Disconnected"}</span>
+          {isThinking && <span className="text-yellow-400 animate-pulse">● Thinking...</span>}
+          {currentPhase && <span className="text-indigo-400">{currentPhase.replace(/_/g, " ")}</span>}
         </div>
 
-        {/* Transcript panel */}
         <div className="flex-1 overflow-hidden bg-gray-900/50 border border-gray-800 rounded-xl p-4">
           <TranscriptPanel
-            conversation={conversation}
-            liveTranscript={transcript}
+            conversation={legacyConversation}
+            liveTranscript={liveTranscript}
             isThinking={isThinking}
           />
         </div>
 
-        {/* Controls */}
         <div className="flex items-center justify-between py-2">
           <div className="flex items-center gap-4">
             <MicButton
               isRecording={isRecording}
               isConnected={isConnected}
-              onStart={startRecording}
-              onStop={stopRecording}
+              onStart={handleStartRecording}
+              onStop={handleStopRecording}
             />
             <div className="text-sm text-gray-400">
               {isRecording ? (

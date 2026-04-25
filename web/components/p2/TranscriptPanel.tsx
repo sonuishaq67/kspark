@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ConversationTurn } from "@/lib/useInterviewSocket";
+import { ConversationTurn } from "@/lib/types";
 
 interface TranscriptPanelProps {
   conversation: ConversationTurn[];

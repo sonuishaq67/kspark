@@ -12,6 +12,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# Allow web/lib (frontend source)
+!web/lib/
 parts/
 sdist/
 var/
