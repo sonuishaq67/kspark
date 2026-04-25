@@ -258,6 +258,12 @@ export default function PracticeSetupPage() {
         JSON.stringify(analysis)
       );
 
+      // Store raw inputs for prep-brief → interview flow
+      sessionStorage.setItem("roleready.lastResume", resume);
+      sessionStorage.setItem("roleready.lastJD", jobDescription);
+      sessionStorage.setItem("roleready.lastCompany", company);
+      sessionStorage.setItem("roleready.lastRoleType", roleType);
+
       // Navigate to gap map
       router.push(`/practice/gap-map?session_id=${analysis.session_id}`);
     } catch (e) {
