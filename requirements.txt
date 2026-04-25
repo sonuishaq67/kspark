@@ -1,0 +1,47 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# RoleReady AI — Consolidated Python Dependencies
+# ══════════════════════════════════════════════════════════════════════════════
+# Single requirements file for both backend (:8000) and ai-core (:8001) services
+# 
+# Setup:
+#   conda env create -f environment.yml
+#   conda activate roleready
+#   pip install -r requirements.txt
+#
+# Or manually:
+#   conda create -n roleready python=3.11
+#   conda activate roleready
+#   pip install -r requirements.txt
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Core Framework ────────────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.4
+pydantic-settings==2.2.1
+python-dotenv==1.0.1
+
+# ── Database ──────────────────────────────────────────────────────────────────
+aiosqlite==0.20.0
+
+# ── LLM Providers ─────────────────────────────────────────────────────────────
+groq==0.9.0                    # Backend: Groq API for fast inference
+openai==1.30.1                 # AI Core: OpenAI API (gpt-4o, gpt-4o-mini)
+
+# ── LangChain / LangGraph ─────────────────────────────────────────────────────
+langgraph==1.1.9               # AI Core: Orchestration graph
+langchain-core==1.3.0          # AI Core: LangChain core
+
+# ── Speech Services ───────────────────────────────────────────────────────────
+deepgram-sdk==3.2.7            # Backend: Deepgram ASR (WebSocket streaming)
+elevenlabs==1.2.0              # Both: ElevenLabs TTS (streaming MP3)
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+pyyaml==6.0.1                  # Config file parsing (personas, questions)
+httpx==0.27.0                  # Async HTTP client
+websockets==12.0               # WebSocket support for voice interviews
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest==8.2.0
+pytest-asyncio==0.23.6
+hypothesis==6.100.0            # Backend: Property-based testing

@@ -1,5 +1,7 @@
 # Requirements: RoleReady AI MVP
 
+> **Implementation Status:** This document describes the planned RoleReady AI MVP features. The current codebase has a dual-backend architecture (Legacy Backend :8000 + AI Core :8001) with the AI Core fully operational. The gap analysis engine and adaptive interview features described in Workstreams 1-3 are **planned but not yet implemented**. See `.kiro/steering/architecture.md` for current implementation status.
+
 ## Introduction
 
 RoleReady AI is a hackathon MVP that extends the existing `interview-coach` application. It takes a candidate's resume and a job description, identifies readiness gaps, runs an adaptive mock interview targeting those gaps, and produces a learning-focused feedback report. The system must never ghostwrite answers for the candidate.

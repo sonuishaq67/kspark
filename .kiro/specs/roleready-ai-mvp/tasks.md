@@ -1,5 +1,7 @@
 # RoleReady AI — Task Master Index
 
+> **Implementation Status:** The current codebase has a dual-backend architecture with the AI Core (:8001) fully operational. The tasks below describe the **planned RoleReady AI MVP features** that are not yet implemented. The three workstreams can be built in parallel once development begins.
+
 Three independent workstreams. Each person owns their slice end-to-end.
 No merge conflicts if ownership rules are followed.
 

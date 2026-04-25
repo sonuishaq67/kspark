@@ -6,7 +6,13 @@ inclusion: always
 
 ## Architecture Overview
 
-RoleReady AI is a **single-process FastAPI backend + Next.js frontend** architecture optimized for hackathon MVP delivery. Three independent microservices run as modules within the FastAPI process, communicating via direct function calls rather than HTTP.
+RoleReady AI uses a **dual-backend architecture** with two FastAPI services and a Next.js frontend:
+
+1. **Legacy Backend (:8000)** — Original interview coach with SQLite persistence, gap tracking, and reporting
+2. **AI Core (:8001)** — Standalone microservice for advanced interview orchestration with OpenAI and voice support
+3. **Next.js Frontend (:3000)** — Unified UI that communicates with both backends
+
+This architecture evolved during development: the legacy backend was built first by the full team (3 people) and owns all database operations. The AI Core was added later as a separate microservice to support multiple session types and real-time voice interviews.
 
 ```mermaid
 graph TB
@@ -207,7 +213,47 @@ Frontend renders full report
 
 ---
 
-## Module Boundaries
+## Current Implementation Status
+
+### ✅ Implemented (Legacy Backend :8000)
+- SQLite database with all tables (users, sessions, turns, gaps, reports, research_cache)
+- Session management endpoints
+- Turn classification and orchestration
+- Ghostwriting guardrail
+- Report generation (basic TLDR)
+- Tavily research agent with caching
+- Mock mode support
+- WebSocket for legacy voice interviews
+
+### ✅ Implemented (AI Core :8001)
+- Six session types (FULL_INTERVIEW, BEHAVIORAL_PRACTICE, TECHNICAL_CONCEPT_PRACTICE, CODING_PRACTICE, RESUME_DEEP_DIVE, CUSTOM_QUESTION)
+- Real-time voice interview via WebSocket
+- OpenAI integration (gpt-4o, gpt-4o-mini)
+- ElevenLabs TTS/STT integration
+- Session planner with phase management
+- Question generator and follow-up selector
+- Evaluation report with rubric scoring
+- In-memory session state
+- Mock mode support
+
+### ✅ Implemented (Frontend :3000)
+- Dashboard with session list
+- Legacy interview flow (/interview/new, /interview/[sessionId])
+- Practice setup page (/practice/setup)
+- Voice-first interview room (/practice/interview) with VoiceOrb
+- Report page (/practice/report)
+- RoleReady components (ReportSummary, ScoreCard, FollowUpAnalysis, NextPracticePlan, DashboardStats)
+- Live code review components (CodeEditor, CodingRoom, ReviewPanel)
+
+### 🚧 Planned but Not Implemented
+- **Readiness analysis endpoint** (`POST /api/readiness/analyze`) — Gap analysis from JD + resume
+- **Gap map frontend** — Visual skill gap display (Steps 1-3 of practice flow)
+- **Typed turn endpoint** (`POST /api/sessions/{id}/turns`) — Text-based interview alternative
+- **Three-panel InterviewRoom** — Sidebar + transcript + LiveGapPanel layout
+- **Gap-driven question generation** — Questions generated from readiness analysis
+- **Adaptive follow-up logic** — Probing specific gaps with priority ordering
+
+The spec files describe the **planned RoleReady AI MVP** architecture. The current implementation has the AI Core microservice operational, but the gap analysis and adaptive interview features from the spec are not yet built.
 
 ### Ishaq's Module: Gap Engine
 **Owns:**

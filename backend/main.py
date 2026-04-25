@@ -80,6 +80,10 @@ async def health():
 from api.sessions import router as sessions_router
 app.include_router(sessions_router)
 
+# Readiness / Gap Analysis API
+from api.readiness import router as readiness_router
+app.include_router(readiness_router)
+
 # Research API (Tavily-backed context preparation)
 from api.research import router as research_router
 app.include_router(research_router)

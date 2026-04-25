@@ -46,21 +46,44 @@ async def create_session(
     mode: str = "professional",
     persona_id: str = "neutral",
     user_id: str = DEMO_USER_ID,
+    session_id: str | None = None,
+    target_role: str | None = None,
+    company_name: str | None = None,
+    interview_type: str = "mixed",
+    readiness_score: int | None = None,
+    summary: str | None = None,
 ) -> dict[str, Any]:
-    session_id = _new_id()
+    if session_id is None:
+        session_id = _new_id()
     db = await get_db()
     try:
         await db.execute(
             """
-            INSERT INTO sessions (id, user_id, mode, persona_id, state, started_at)
-            VALUES (?, ?, ?, ?, 'PLANNING', ?)
+            INSERT INTO sessions (
+                id, user_id, mode, persona_id, state, started_at,
+                target_role, company_name, interview_type, readiness_score, summary
+            )
+            VALUES (?, ?, ?, ?, 'PLANNING', ?, ?, ?, ?, ?, ?)
             """,
-            (session_id, user_id, mode, persona_id, _now()),
+            (
+                session_id, user_id, mode, persona_id, _now(),
+                target_role, company_name, interview_type, readiness_score, summary,
+            ),
         )
         await db.commit()
     finally:
         await db.close()
-    return {"session_id": session_id, "user_id": user_id, "mode": mode, "persona_id": persona_id}
+    return {
+        "session_id": session_id,
+        "user_id": user_id,
+        "mode": mode,
+        "persona_id": persona_id,
+        "target_role": target_role,
+        "company_name": company_name,
+        "interview_type": interview_type,
+        "readiness_score": readiness_score,
+        "summary": summary,
+    }
 
 
 async def get_session(session_id: str) -> dict[str, Any] | None:
@@ -347,3 +370,96 @@ async def mark_session_ended(session_id: str) -> None:
         await db.commit()
     finally:
         await db.close()
+
+
+# ── gaps ──────────────────────────────────────────────────────────────────────
+
+async def insert_gap(
+    session_id: str,
+    label: str,
+    category: str,
+    evidence: str | None = None,
+    status: str = "open",
+) -> str:
+    """Insert a gap and return gap_id."""
+    gap_id = _new_id()
+    db = await get_db()
+    try:
+        await db.execute(
+            """
+            INSERT INTO gaps (id, session_id, label, category, evidence, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (gap_id, session_id, label, category, evidence, status, _now()),
+        )
+        await db.commit()
+    finally:
+        await db.close()
+    return gap_id
+
+
+async def get_gaps_for_session(session_id: str) -> list[dict[str, Any]]:
+    """Get all gaps for a session."""
+    db = await get_db()
+    try:
+        async with db.execute(
+            """
+            SELECT * FROM gaps
+            WHERE session_id = ?
+            ORDER BY created_at ASC
+            """,
+            (session_id,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+    finally:
+        await db.close()
+    return [_row_to_dict(r) for r in rows]
+
+
+async def update_gap_status(
+    gap_id: str,
+    status: str,
+    evidence: str | None = None,
+) -> None:
+    """Update gap status (open → improved → closed)."""
+    db = await get_db()
+    try:
+        if evidence:
+            await db.execute(
+                """
+                UPDATE gaps
+                SET status = ?, evidence = ?
+                WHERE id = ?
+                """,
+                (status, evidence, gap_id),
+            )
+        else:
+            await db.execute(
+                """
+                UPDATE gaps
+                SET status = ?
+                WHERE id = ?
+                """,
+                (status, gap_id),
+            )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_gap_by_label(session_id: str, label: str) -> dict[str, Any] | None:
+    """Get a specific gap by label."""
+    db = await get_db()
+    try:
+        async with db.execute(
+            """
+            SELECT * FROM gaps
+            WHERE session_id = ? AND label = ?
+            LIMIT 1
+            """,
+            (session_id, label),
+        ) as cursor:
+            row = await cursor.fetchone()
+    finally:
+        await db.close()
+    return _row_to_dict(row) if row else None

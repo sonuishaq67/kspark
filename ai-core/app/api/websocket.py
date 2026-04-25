@@ -17,6 +17,7 @@ Server → Client events:
   phase_update            — phase transition notification
   timer_update            — time remaining
   report_ready            — report generation complete
+  code_review             — structured live review of latest code update
   latency_metrics         — turn timing metrics
   error                   — error notification
 """
@@ -26,7 +27,6 @@ import asyncio
 import base64
 import json
 import logging
-import time
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -36,6 +36,7 @@ from app.agents.response_generator import generate_response_stream, is_ghostwrit
 from app.core.context_loader import load_context
 from app.core.memory import add_turn
 from app.core.orchestrator import advance_phase, end_session
+from app.features.live_code_review import record_code_update, review_code
 from app.models.session import TurnRecord, get_session
 from app.services.stt_service import transcribe_audio
 from app.services.tts_service import synthesize_stream
@@ -172,16 +173,18 @@ async def handle_websocket(websocket: WebSocket, session_id: str) -> None:
                 await _send(websocket, {"type": "latency_metrics", **tracker.to_dict()})
 
             elif event_type == "code_update":
-                # Store code update in session for coding sessions
                 code = event.get("code", "")
                 language = event.get("language", "python")
                 logger.debug("Code update: session=%s lang=%s len=%d", session_id, language, len(code))
-                # Append as a special turn for the evaluator
-                add_turn(session, TurnRecord(
-                    speaker="candidate",
-                    transcript=f"[CODE UPDATE - {language}]\n{code}",
-                    phase=session.current_phase.name if session.current_phase else "CODING",
-                ))
+
+                record_code_update(session, code, language)
+                review = await review_code(session, ctx, code, language)
+                session.latest_code_review = review
+                await _send(websocket, {
+                    "type": "code_review",
+                    "language": language,
+                    "review": review,
+                })
 
             elif event_type == "mode_update":
                 new_mode = event.get("mode", "")

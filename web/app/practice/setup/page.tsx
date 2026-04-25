@@ -77,6 +77,57 @@ const DIFFICULTIES = [
   { id: "hard", label: "Hard" },
 ];
 
+// Example data for quick testing
+const EXAMPLE_DATA = {
+  resume: `John Doe
+Software Engineer | 3 years experience
+
+EXPERIENCE
+Senior Software Engineer @ TechCorp (2022-Present)
+- Led development of microservices architecture serving 1M+ users
+- Reduced API latency by 40% through caching optimization
+- Mentored 3 junior engineers on best practices
+
+Software Engineer @ StartupXYZ (2020-2022)
+- Built real-time chat feature using WebSockets and Redis
+- Implemented CI/CD pipeline reducing deployment time by 60%
+- Collaborated with product team on feature prioritization
+
+SKILLS
+Languages: Python, JavaScript, TypeScript, Go
+Frameworks: React, Node.js, FastAPI, Django
+Tools: Docker, Kubernetes, AWS, PostgreSQL, Redis
+
+EDUCATION
+B.S. Computer Science, State University (2020)`,
+
+  jobDescription: `Senior Software Engineer - Backend
+Google | Mountain View, CA
+
+We're looking for a Senior Software Engineer to join our Cloud Infrastructure team.
+
+RESPONSIBILITIES
+- Design and implement scalable distributed systems
+- Optimize performance of high-traffic APIs (10M+ requests/day)
+- Collaborate with cross-functional teams on system architecture
+- Mentor junior engineers and conduct code reviews
+- Participate in on-call rotation for production systems
+
+REQUIREMENTS
+- 5+ years of software engineering experience
+- Strong proficiency in Go, Python, or Java
+- Experience with distributed systems and microservices
+- Deep understanding of system design and scalability
+- Experience with cloud platforms (GCP, AWS, or Azure)
+- Strong communication and leadership skills
+
+PREFERRED
+- Experience with Kubernetes and container orchestration
+- Knowledge of database optimization (SQL and NoSQL)
+- Contributions to open-source projects
+- Experience with monitoring and observability tools`,
+};
+
 export default function PracticeSetupPage() {
   const router = useRouter();
 
@@ -170,6 +221,22 @@ export default function PracticeSetupPage() {
       setLoading(false);
       setProgress("");
     }
+  };
+
+  const loadExampleData = () => {
+    setResume(EXAMPLE_DATA.resume);
+    setJobDescription(EXAMPLE_DATA.jobDescription);
+    setCompany("Google");
+    setRoleType("Senior SDE");
+    setFocusArea("distributed systems and scalability");
+  };
+
+  const clearAllFields = () => {
+    setResume("");
+    setJobDescription("");
+    setCompany("");
+    setRoleType("SDE1");
+    setFocusArea(selectedType.defaultFocus);
   };
 
   return (
@@ -311,9 +378,25 @@ export default function PracticeSetupPage() {
 
         {/* Optional: Resume + JD */}
         <section>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-            Context (Optional but recommended)
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+              Context (Optional but recommended)
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={loadExampleData}
+                className="rounded-lg border border-indigo-600/50 bg-indigo-950/30 px-3 py-1.5 text-xs font-medium text-indigo-300 transition-colors hover:bg-indigo-950/50"
+              >
+                📝 Load Example
+              </button>
+              <button
+                onClick={clearAllFields}
+                className="rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-gray-800"
+              >
+                🗑 Clear All
+              </button>
+            </div>
+          </div>
           <p className="mb-3 text-xs text-gray-500">
             The researcher uses your resume + the company name to fetch interview signal,
             then the AI interviewer uses that to shape its persona and questions.

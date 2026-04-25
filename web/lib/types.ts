@@ -95,6 +95,29 @@ export interface AICoreReport {
   action_plan: string[];
 }
 
+// ── Live code review ─────────────────────────────────────────────────────────
+
+export interface CodeReviewIssue {
+  severity: "info" | "warning" | "error";
+  line: number | null;
+  category:
+    | "correctness"
+    | "edge_case"
+    | "complexity"
+    | "readability"
+    | "testing"
+    | "approach";
+  message: string;
+  hint: string;
+}
+
+export interface CodeReview {
+  summary: string;
+  status: "idle" | "reviewing" | "needs_attention" | "strong";
+  issues: CodeReviewIssue[];
+  next_prompt: string;
+}
+
 // ── WebSocket events ──────────────────────────────────────────────────────────
 
 export type ServerEvent =
@@ -104,6 +127,7 @@ export type ServerEvent =
   | { type: "phase_update"; phase: string; description: string; phase_index: number; total_phases: number }
   | { type: "timer_update"; time_remaining_seconds: number; current_phase: string }
   | { type: "report_ready"; session_id: string; report: AICoreReport }
+  | { type: "code_review"; language: string; review: CodeReview }
   | { type: "latency_metrics"; speech_end_to_question_selected_ms: number | null; total_turn_latency_ms: number | null }
   | { type: "error"; code: string; message: string };
 
@@ -111,6 +135,7 @@ export type ClientEvent =
   | { type: "speech_started" }
   | { type: "speech_ended"; final_transcript: string }
   | { type: "transcript_chunk"; text: string; is_final: boolean }
+  | { type: "code_update"; code: string; language: string }
   | { type: "end_session" };
 
 // ── Conversation ──────────────────────────────────────────────────────────────

@@ -3,25 +3,164 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #050510;
+  --foreground: #ededed;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Glass morphic surface */
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+      0 30px 60px -20px rgba(0, 0, 0, 0.5);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+      0 40px 80px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .glass-hover {
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 0.3s ease, background 0.3s ease;
+  }
+  .glass-hover:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    background: linear-gradient(120deg, #c4b5fd 0%, #a5f3fc 35%, #f0abfc 70%, #fde68a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Aurora background blobs */
+  .aurora {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.55;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* Soft rotating conic glow behind orb */
+  .conic-glow {
+    background: conic-gradient(
+      from 0deg,
+      rgba(99, 102, 241, 0.0),
+      rgba(99, 102, 241, 0.6),
+      rgba(20, 184, 166, 0.6),
+      rgba(244, 114, 182, 0.6),
+      rgba(99, 102, 241, 0.0)
+    );
+    filter: blur(40px);
+    animation: spin-slow 18s linear infinite;
+  }
+
+  /* Grain texture overlay */
+  .grain {
+    background-image:
+      radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+
+  /* Noisy diagonal sheen used for hero card border highlight */
+  .sheen {
+    background:
+      linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.08) 45%, transparent 60%);
+  }
 }
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes float-a {
+  0%, 100% { transform: translate3d(-10%, -10%, 0) scale(1); }
+  50% { transform: translate3d(10%, 10%, 0) scale(1.15); }
+}
+@keyframes float-b {
+  0%, 100% { transform: translate3d(10%, 5%, 0) scale(1.1); }
+  50% { transform: translate3d(-5%, -15%, 0) scale(0.95); }
+}
+@keyframes float-c {
+  0%, 100% { transform: translate3d(0, 5%, 0) scale(1); }
+  50% { transform: translate3d(-10%, -10%, 0) scale(1.2); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+@keyframes ring-pulse {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.anim-float-a { animation: float-a 18s ease-in-out infinite; }
+.anim-float-b { animation: float-b 22s ease-in-out infinite; }
+.anim-float-c { animation: float-c 26s ease-in-out infinite; }
+.anim-pulse { animation: pulse-soft 6s ease-in-out infinite; }
+.anim-fade-up { animation: fade-up 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+.ring-pulse::before,
+.ring-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  animation: ring-pulse 3s ease-out infinite;
+}
+.ring-pulse::after {
+  animation-delay: 1.5s;
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.5) 0%,
+    rgba(255,255,255,1) 50%,
+    rgba(255,255,255,0.5) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+/* Hide scrollbars on horizontal lists but allow scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

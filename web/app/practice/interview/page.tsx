@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Layout from "@/components/shared/Layout";
+import CodingRoom from "@/components/live-code-review/CodingRoom";
 import InterviewRoom from "@/components/roleready/InterviewRoom";
 import StepProgress from "@/components/roleready/StepProgress";
 
@@ -41,14 +42,25 @@ function InterviewContent() {
     <Layout>
       <div className="space-y-4">
         <StepProgress activeStep={4} />
-        <InterviewRoom
-          sessionId={sessionId}
-          introMessage={decodeURIComponent(introMessage)}
-          sessionType={sessionType}
-          mode={mode}
-          phases={phases}
-          durationMinutes={duration}
-        />
+        {sessionType === "CODING_PRACTICE" ? (
+          <CodingRoom
+            sessionId={sessionId}
+            introMessage={decodeURIComponent(introMessage)}
+            sessionType={sessionType}
+            mode={mode}
+            phases={phases}
+            durationMinutes={duration}
+          />
+        ) : (
+          <InterviewRoom
+            sessionId={sessionId}
+            introMessage={decodeURIComponent(introMessage)}
+            sessionType={sessionType}
+            mode={mode}
+            phases={phases}
+            durationMinutes={duration}
+          />
+        )}
       </div>
     </Layout>
   );

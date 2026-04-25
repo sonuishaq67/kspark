@@ -21,6 +21,28 @@
 
 ## Quick Start
 
+### Option 1: Conda Environment (Recommended)
+
+```bash
+# 1. Clone and setup
+git clone <repo-url>
+cd interview-coach
+make setup              # Creates conda environment with all dependencies
+
+# 2. Activate environment
+conda activate roleready
+
+# 3. Configure
+cp .env.example .env    # Fill in API keys (optional — see mock mode below)
+
+# 4. Start everything
+./start.sh              # Opens 3 terminals + browser automatically
+```
+
+See [CONDA_SETUP.md](./CONDA_SETUP.md) for detailed conda setup guide.
+
+### Option 2: Docker
+
 ```bash
 # 1. Clone and configure
 git clone <repo-url>
@@ -40,6 +62,15 @@ MOCK_LLM=1 make dev
 ```
 
 Mock mode runs the complete flow — gap analysis, interview, report — with deterministic demo data. No Groq, no Deepgram, no ElevenLabs needed.
+
+### Quick Testing with Example Data
+
+The setup page includes a **📝 Load Example** button that auto-fills:
+- Resume (3-year SDE profile)
+- Job Description (Google Senior SDE role)
+- Company, role, and focus area
+
+Perfect for quick demos and testing. See [`TESTING_GUIDE.md`](TESTING_GUIDE.md) for detailed testing scenarios.
 
 ---
 

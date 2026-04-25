@@ -1,5 +1,7 @@
 # Design Document: RoleReady AI MVP
 
+> **Implementation Status:** This document describes the planned RoleReady AI MVP architecture. The current implementation has a **dual-backend architecture** with the AI Core (:8001) fully operational for voice-first interviews, while the gap analysis engine and adaptive interview features described here are **planned but not yet implemented**. See `.kiro/steering/architecture.md` for current implementation status.
+
 ## Overview
 
 RoleReady AI extends the existing `interview-coach` FastAPI + Next.js application into a job-description-aware mock interview platform. The system ingests a candidate's resume and a target job description, produces a readiness gap map, runs an adaptive typed interview that probes identified gaps, and generates a learning-focused multi-dimensional feedback report — all without ghostwriting answers for the candidate.

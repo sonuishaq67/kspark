@@ -23,7 +23,6 @@ wheels/
 *.egg
 MANIFEST
 venv/
-env/
 ENV/
 
 # Node
@@ -41,6 +40,7 @@ out/
 .env
 .env.local
 .env.*.local
+env/
 
 # IDEs
 .vscode/
@@ -58,14 +58,19 @@ data/leetcode.sqlite
 data/interview_coach.db
 data/*.db
 
-# Python virtual envs
+# Python virtual envs (deprecated - now using conda)
 backend/.venv/
 backend/venv/
+ai-core/.venv/
+ai-core/venv/
+.venv/
+venv/
 
-# Conda environments
+# Conda environments (local)
 .conda/
 conda-meta/
 envs/
+environment-full.yml  # Exported full environment (optional)
 
 # Logs
 *.log

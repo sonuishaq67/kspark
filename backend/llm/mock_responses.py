@@ -9,6 +9,81 @@ from typing import Any
 
 
 MOCK_RESPONSES: dict[str, Any] = {
+    "readiness_analysis": {
+        "readiness_score": 65,
+        "summary": (
+            "Solid mid-level engineer with 3 years of Python experience and strong "
+            "microservices background. Has mentoring experience but lacks distributed "
+            "systems depth and Kubernetes expertise. Needs preparation on system design "
+            "at scale and Go programming."
+        ),
+        "strong_matches": [
+            {
+                "label": "Python Development",
+                "evidence": "3 years of Python experience, built microservices serving 1M+ users",
+            },
+            {
+                "label": "Performance Optimization",
+                "evidence": "Reduced API latency by 40% through caching optimization",
+            },
+            {
+                "label": "Real-time Systems",
+                "evidence": "Built real-time chat feature using WebSockets and Redis",
+            },
+            {
+                "label": "CI/CD",
+                "evidence": "Implemented CI/CD pipeline reducing deployment time by 60%",
+            },
+        ],
+        "partial_matches": [
+            {
+                "label": "Mentoring",
+                "evidence": "Mentored 3 junior engineers but lacks details on scope and impact",
+            },
+            {
+                "label": "Microservices Architecture",
+                "evidence": "Built microservices but no mention of service mesh or distributed patterns",
+            },
+            {
+                "label": "Cloud Platforms",
+                "evidence": "Mentions AWS but no details on specific services or scale",
+            },
+        ],
+        "missing_or_weak": [
+            {
+                "label": "Kubernetes",
+                "evidence": None,
+            },
+            {
+                "label": "Go Programming",
+                "evidence": None,
+            },
+            {
+                "label": "Distributed Systems Design",
+                "evidence": "No mention of CAP theorem, consensus algorithms, or distributed patterns",
+            },
+            {
+                "label": "High-Traffic API Design",
+                "evidence": "1M users mentioned but no details on request volume or scaling strategies",
+            },
+            {
+                "label": "System Design at Scale",
+                "evidence": "No examples of designing systems for 10M+ requests/day",
+            },
+        ],
+        "interview_focus_areas": [
+            "Distributed systems knowledge (consensus, replication, partitioning)",
+            "System design for high-traffic APIs (10M+ requests/day)",
+            "Kubernetes and container orchestration experience",
+        ],
+        "prep_brief": [
+            "Review distributed systems fundamentals: CAP theorem, consistency models, consensus algorithms (Raft, Paxos)",
+            "Study Kubernetes basics: pods, services, deployments, and how to orchestrate microservices",
+            "Prepare system design case study: design a high-traffic API (10M+ req/day) with caching, load balancing, and failover",
+            "Expand your mentoring story: quantify impact (e.g., 'mentored 3 engineers who shipped X feature in Y weeks')",
+            "Learn Go basics: syntax, concurrency patterns (goroutines, channels), and compare to Python",
+        ],
+    },
     "report_generator": {
         "summary": (
             "You showed strong API understanding and project ownership. "

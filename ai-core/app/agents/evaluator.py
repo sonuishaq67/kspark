@@ -8,6 +8,7 @@ import json
 import logging
 
 from app.core.context_loader import CandidateContext
+from app.features.live_code_review import format_latest_code_block
 from app.models.evaluation import EvaluationReport, MetricScore
 from app.models.session import InterviewSession, SessionType
 from app.services.openai_service import chat_json
@@ -32,6 +33,12 @@ async def generate_report(
     rubric_text = "\n".join(f"- **{k}**: {v}" for k, v in rubric.items())
 
     transcript = session.formatted_transcript(last_n=100)
+    code_block = format_latest_code_block(session, "Final Candidate Code")
+    if code_block:
+        code_block += f"""
+## Latest Live Code Review
+{json.dumps(session.latest_code_review or {}, indent=2)}
+"""
 
     user_content = f"""## Session Info
 Session type: {session.session_type.value}
@@ -49,6 +56,7 @@ Role: {session.role_type}
 
 ## Full Transcript
 {transcript}
+{code_block}
 
 ## Conversation Summary
 {session.conversation_summary}

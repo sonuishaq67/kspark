@@ -96,3 +96,9 @@ class LatencyMetricsEvent(BaseModel):
     question_selected_to_first_token_ms: float | None = None
     first_token_to_first_audio_ms: float | None = None
     total_turn_latency_ms: float | None = None
+
+
+class CodeReviewEvent(BaseModel):
+    type: Literal["code_review"] = "code_review"
+    language: str
+    review: dict[str, Any]

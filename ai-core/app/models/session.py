@@ -107,6 +107,10 @@ class InterviewSession:
     turn_history: list[TurnRecord] = field(default_factory=list)
     conversation_summary: str = ""
     live_transcript_buffer: str = ""
+    latest_code: str = ""
+    latest_language: str = "python"
+    code_snapshots: list[dict[str, Any]] = field(default_factory=list)
+    latest_code_review: dict[str, Any] | None = None
 
     # Question pipeline
     candidate_questions: list[CandidateQuestion] = field(default_factory=list)

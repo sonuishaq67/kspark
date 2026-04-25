@@ -11,6 +11,7 @@ from collections.abc import AsyncGenerator
 
 from app.core.context_loader import CandidateContext
 from app.core.memory import build_context_block
+from app.features.live_code_review import format_latest_code_block
 from app.models.session import InterviewSession, SessionMode
 from app.services.openai_service import chat, chat_stream
 from app.utils.prompts import get_prompt
@@ -122,8 +123,11 @@ def _build_user_content(
     selected_question: str,
     final_transcript: str,
 ) -> str:
+    code_context = format_latest_code_block(session, "Current Candidate Code")
+
     return f"""Candidate just said:
 {final_transcript}
+{code_context}
 
 Selected follow-up question to ask:
 {selected_question}

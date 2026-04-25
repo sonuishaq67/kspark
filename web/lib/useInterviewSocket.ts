@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WS_URL } from "./api";
-import { AICoreReport, ConversationTurn } from "./types";
+import { AICoreReport, CodeReview, ConversationTurn } from "./types";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
+export type ReviewStatus = "idle" | "reviewing" | "ready" | "error";
 
 export interface InterviewSocketState {
   ws: WebSocket | null;
@@ -18,10 +19,18 @@ export interface InterviewSocketState {
   totalPhases: number;
   timeRemaining: number;
   isComplete: boolean;
+  guardrailActivated: boolean;
+  codeReview: CodeReview | null;
+  reviewStatus: ReviewStatus;
+
   report: AICoreReport | null;
   isThinking: boolean;
-  isSpeaking: boolean;   // agent is currently playing TTS audio
+  isSpeaking: boolean;
 
+  sendTranscriptChunk: (text: string) => void;
+  sendSpeechStarted: () => void;
+  sendSpeechEnded: (finalTranscript: string) => void;
+  sendCodeUpdate: (code: string, language: string) => void;
   sendEndSession: () => void;
   disconnect: () => void;
 }
@@ -37,13 +46,14 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
   const [totalPhases, setTotalPhases] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [guardrailActivated] = useState(false);
+  const [codeReview, setCodeReview] = useState<CodeReview | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<ReviewStatus>("idle");
   const [report, setReport] = useState<AICoreReport | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   const streamBufferRef = useRef("");
-
-  // Audio playback — accumulate chunks then play as single blob
   const audioChunksRef = useRef<string[]>([]);
   const audioCompleteRef = useRef(false);
 
@@ -52,7 +62,6 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
     setIsSpeaking(true);
 
     try {
-      // Concatenate all base64 chunks into one binary blob
       const allBytes: number[] = [];
       for (const b64 of b64Chunks) {
         if (!b64) continue;
@@ -72,15 +81,27 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
 
       await new Promise<void>((resolve) => {
         const audio = new Audio(url);
-        audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-        audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve();
+        };
         audio.play().catch(() => resolve());
       });
     } catch {
-      // skip
+      // Audio playback is best-effort.
     }
 
     setIsSpeaking(false);
+  }, []);
+
+  const send = useCallback((data: object) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(data));
+    }
   }, []);
 
   const connect = useCallback(() => {
@@ -94,7 +115,11 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
 
     socket.onmessage = (e) => {
       let data: Record<string, unknown>;
-      try { data = JSON.parse(e.data as string); } catch { return; }
+      try {
+        data = JSON.parse(e.data as string);
+      } catch {
+        return;
+      }
 
       switch (data.type) {
         case "interviewer_text_delta": {
@@ -112,24 +137,21 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
             streamBufferRef.current = "";
             setStreamingText("");
 
-            // Text done — wait a beat then play accumulated audio
             setTimeout(() => {
               if (audioChunksRef.current.length > 0) {
                 const chunks = [...audioChunksRef.current];
                 audioChunksRef.current = [];
                 playAudio(chunks);
               } else {
-                // Audio hasn't arrived yet — mark that text is done
                 audioCompleteRef.current = true;
               }
             }, 100);
           }
           break;
         }
+
         case "interviewer_audio_chunk": {
-          // Accumulate audio chunks — play when text is_final
           audioChunksRef.current.push(data.data as string);
-          // If text streaming already finished, play immediately
           if (audioCompleteRef.current) {
             const chunks = [...audioChunksRef.current];
             audioChunksRef.current = [];
@@ -138,40 +160,96 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
           }
           break;
         }
+
         case "phase_update": {
           setCurrentPhase(data.phase as string);
           setCurrentPhaseIndex(data.phase_index as number);
           setTotalPhases(data.total_phases as number);
           break;
         }
+
         case "timer_update": {
           setTimeRemaining(data.time_remaining_seconds as number);
           break;
         }
+
         case "report_ready": {
           setReport(data.report as AICoreReport);
           setIsComplete(true);
           break;
         }
+
         case "selected_question": {
           setIsThinking(false);
+          break;
+        }
+
+        case "code_review": {
+          setCodeReview(data.review as CodeReview);
+          setReviewStatus("ready");
+          break;
+        }
+
+        case "error": {
+          console.error("WS error from server:", data.code, data.message);
+          setReviewStatus("error");
           break;
         }
       }
     };
 
-    socket.onclose = () => { setStatus("disconnected"); wsRef.current = null; setWs(null); };
+    socket.onclose = () => {
+      setStatus("disconnected");
+      wsRef.current = null;
+      setWs(null);
+    };
     socket.onerror = () => setStatus("error");
   }, [sessionId, playAudio]);
 
   useEffect(() => {
     connect();
-    return () => { wsRef.current?.close(); };
+    return () => {
+      wsRef.current?.close();
+    };
   }, [connect]);
 
+  const sendTranscriptChunk = useCallback(
+    (text: string) => {
+      send({ type: "transcript_chunk", text, is_final: false });
+    },
+    [send]
+  );
+
+  const sendSpeechStarted = useCallback(() => {
+    setIsThinking(false);
+    send({ type: "speech_started" });
+  }, [send]);
+
+  const sendSpeechEnded = useCallback(
+    (finalTranscript: string) => {
+      if (finalTranscript.trim()) {
+        setConversation((prev) => [
+          ...prev,
+          { speaker: "candidate", text: finalTranscript },
+        ]);
+      }
+      setIsThinking(true);
+      send({ type: "speech_ended", final_transcript: finalTranscript });
+    },
+    [send]
+  );
+
+  const sendCodeUpdate = useCallback(
+    (code: string, language: string) => {
+      setReviewStatus(code.trim() ? "reviewing" : "idle");
+      send({ type: "code_update", code, language });
+    },
+    [send]
+  );
+
   const sendEndSession = useCallback(() => {
-    wsRef.current?.send(JSON.stringify({ type: "end_session" }));
-  }, []);
+    send({ type: "end_session" });
+  }, [send]);
 
   const disconnect = useCallback(() => {
     wsRef.current?.close();
@@ -191,9 +269,16 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
     totalPhases,
     timeRemaining,
     isComplete,
+    guardrailActivated,
+    codeReview,
+    reviewStatus,
     report,
     isThinking,
     isSpeaking,
+    sendTranscriptChunk,
+    sendSpeechStarted,
+    sendSpeechEnded,
+    sendCodeUpdate,
     sendEndSession,
     disconnect,
   };

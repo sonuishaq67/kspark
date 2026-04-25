@@ -159,6 +159,20 @@ _MOCK_RESPONSES = {
         "improved_answer_example": "Use `i < n` instead of `i <= n` in the loop condition.",
         "action_plan": ["Practice loop boundary conditions", "Always state space complexity"],
     }),
+    "code_reviewer": json.dumps({
+        "summary": "The structure is a reasonable start, but there is one likely edge case to check before moving on.",
+        "status": "needs_attention",
+        "issues": [
+            {
+                "severity": "warning",
+                "line": None,
+                "category": "edge_case",
+                "message": "The current logic does not clearly handle empty or single-item input.",
+                "hint": "Try walking through the smallest possible input by hand.",
+            }
+        ],
+        "next_prompt": "What should this return for the smallest valid input?",
+    }),
     "default": "I see. Can you tell me more about that?",
 }
 
@@ -171,7 +185,12 @@ def _mock_response(messages: list[dict[str, str]]) -> str:
             system_content = m.get("content", "").lower()
             break
 
-    for key in _MOCK_RESPONSES:
+    keys = sorted(
+        (key for key in _MOCK_RESPONSES if key != "default"),
+        key=len,
+        reverse=True,
+    )
+    for key in keys:
         if key in system_content:
             return _MOCK_RESPONSES[key]
 
