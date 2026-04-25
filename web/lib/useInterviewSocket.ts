@@ -43,35 +43,43 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
 
   const streamBufferRef = useRef("");
 
-  // Audio playback queue
-  const audioQueueRef = useRef<string[]>([]);
-  const isPlayingRef = useRef(false);
+  // Audio playback — accumulate chunks then play as single blob
+  const audioChunksRef = useRef<string[]>([]);
+  const audioCompleteRef = useRef(false);
 
-  const playNextChunk = useCallback(async () => {
-    if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
-    isPlayingRef.current = true;
+  const playAudio = useCallback(async (b64Chunks: string[]) => {
+    if (b64Chunks.length === 0) return;
     setIsSpeaking(true);
 
-    while (audioQueueRef.current.length > 0) {
-      const b64 = audioQueueRef.current.shift()!;
-      try {
+    try {
+      // Concatenate all base64 chunks into one binary blob
+      const allBytes: number[] = [];
+      for (const b64 of b64Chunks) {
+        if (!b64) continue;
         const binary = atob(b64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const blob = new Blob([bytes], { type: "audio/mpeg" });
-        const url = URL.createObjectURL(blob);
-        await new Promise<void>((resolve) => {
-          const audio = new Audio(url);
-          audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-          audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-          audio.play().catch(() => resolve());
-        });
-      } catch {
-        // skip bad chunk
+        for (let i = 0; i < binary.length; i++) {
+          allBytes.push(binary.charCodeAt(i));
+        }
       }
+
+      if (allBytes.length === 0) {
+        setIsSpeaking(false);
+        return;
+      }
+
+      const blob = new Blob([new Uint8Array(allBytes)], { type: "audio/mpeg" });
+      const url = URL.createObjectURL(blob);
+
+      await new Promise<void>((resolve) => {
+        const audio = new Audio(url);
+        audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+        audio.play().catch(() => resolve());
+      });
+    } catch {
+      // skip
     }
 
-    isPlayingRef.current = false;
     setIsSpeaking(false);
   }, []);
 
@@ -103,13 +111,31 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
             }
             streamBufferRef.current = "";
             setStreamingText("");
+
+            // Text done — wait a beat then play accumulated audio
+            setTimeout(() => {
+              if (audioChunksRef.current.length > 0) {
+                const chunks = [...audioChunksRef.current];
+                audioChunksRef.current = [];
+                playAudio(chunks);
+              } else {
+                // Audio hasn't arrived yet — mark that text is done
+                audioCompleteRef.current = true;
+              }
+            }, 100);
           }
           break;
         }
         case "interviewer_audio_chunk": {
-          // Queue audio chunk for sequential playback
-          audioQueueRef.current.push(data.data as string);
-          playNextChunk();
+          // Accumulate audio chunks — play when text is_final
+          audioChunksRef.current.push(data.data as string);
+          // If text streaming already finished, play immediately
+          if (audioCompleteRef.current) {
+            const chunks = [...audioChunksRef.current];
+            audioChunksRef.current = [];
+            audioCompleteRef.current = false;
+            playAudio(chunks);
+          }
           break;
         }
         case "phase_update": {
@@ -136,7 +162,7 @@ export function useInterviewSocket(sessionId: string): InterviewSocketState {
 
     socket.onclose = () => { setStatus("disconnected"); wsRef.current = null; setWs(null); };
     socket.onerror = () => setStatus("error");
-  }, [sessionId, playNextChunk]);
+  }, [sessionId, playAudio]);
 
   useEffect(() => {
     connect();

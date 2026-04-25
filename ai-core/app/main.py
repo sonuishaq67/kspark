@@ -95,3 +95,15 @@ async def list_session_types():
             {"type": "CUSTOM_QUESTION", "description": "Focused mini-interview around a custom question", "default_duration_minutes": 15},
         ]
     }
+
+
+@app.post("/tts")
+async def text_to_speech(body: dict):
+    """Convert text to speech. Returns base64-encoded MP3 audio."""
+    import base64
+    from app.services.tts_service import synthesize_bytes
+    text = body.get("text", "")
+    if not text:
+        return {"audio": ""}
+    audio = await synthesize_bytes(text)
+    return {"audio": base64.b64encode(audio).decode("utf-8")}

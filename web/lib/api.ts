@@ -137,5 +137,12 @@ export const api = {
         turns_count: number;
         is_complete: boolean;
       }>(`${AI_CORE_URL}/sessions/${sessionId}/status`),
+
+    /** Convert text to speech via ElevenLabs. Returns base64 MP3. */
+    tts: (text: string) =>
+      request<{ audio: string }>(`${AI_CORE_URL}/tts`, {
+        method: "POST",
+        body: JSON.stringify({ text }),
+      }),
   },
 };

@@ -7,6 +7,8 @@ import GhostwritingGuardrailBadge from "./GhostwritingGuardrailBadge";
 import { useInterviewSocket } from "@/lib/useInterviewSocket";
 import { useMicrophone } from "@/lib/useMicrophone";
 import { ConversationTurn } from "@/lib/types";
+import { api } from "@/lib/api";
+import { playBase64Audio } from "@/lib/audioPlayer";
 
 interface InterviewRoomProps {
   sessionId: string;
@@ -51,6 +53,25 @@ export default function InterviewRoom({
     { speaker: "interviewer", text: introMessage },
   ]);
 
+  // Speak the intro message via ElevenLabs TTS on mount
+  const introSpokenRef = useRef(false);
+  useEffect(() => {
+    if (introSpokenRef.current || !introMessage) return;
+    introSpokenRef.current = true;
+    setIsSpeakingIntro(true);
+    api.aiCore.tts(introMessage).then((res) => {
+      if (res.audio) {
+        return playBase64Audio(res.audio);
+      }
+    }).catch(() => {
+      // TTS failed — intro is still shown as text
+    }).finally(() => {
+      setIsSpeakingIntro(false);
+    });
+  }, [introMessage]);
+
+  const [isSpeakingIntro, setIsSpeakingIntro] = useState(false);
+
   // Merge socket conversation updates
   useEffect(() => {
     if (socket.conversation.length > 0) {
@@ -88,7 +109,7 @@ export default function InterviewRoom({
   // ── Orb state ─────────────────────────────────────────────────────────────
   const orbState = (() => {
     if (mic.isRecording) return "listening" as const;
-    if (socket.isSpeaking) return "speaking" as const;
+    if (socket.isSpeaking || isSpeakingIntro) return "speaking" as const;
     if (socket.isThinking) return "thinking" as const;
     return "idle" as const;
   })();
@@ -114,7 +135,7 @@ export default function InterviewRoom({
     socket.sendEndSession();
   }, [mic, socket]);
 
-  const isProcessing = (socket.isThinking || socket.isSpeaking) as boolean;
+  const isProcessing = (socket.isThinking || socket.isSpeaking || isSpeakingIntro) as boolean;
   const isActive = !socket.isComplete;
 
   return (
@@ -173,7 +194,8 @@ export default function InterviewRoom({
               {mic.isRecording && "Listening..."}
               {socket.isThinking && !mic.isRecording && "Thinking..."}
               {socket.isSpeaking && "Speaking"}
-              {!mic.isRecording && !socket.isThinking && !socket.isSpeaking && !socket.isComplete && "Tap to speak"}
+              {isSpeakingIntro && !socket.isSpeaking && "Speaking"}
+              {!mic.isRecording && !socket.isThinking && !socket.isSpeaking && !isSpeakingIntro && !socket.isComplete && "Tap to speak"}
               {socket.isComplete && "Done"}
             </span>
           </div>
