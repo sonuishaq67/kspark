@@ -17,9 +17,15 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+
+# Load .env from the ai-core directory before any os.getenv reads happen.
+_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=_ENV_PATH, override=False)
 
 from app.utils.logging import setup_logging
 

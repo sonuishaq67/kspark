@@ -105,6 +105,30 @@ export const api = {
       method: "POST",
     }),
 
+  // ── Research (Tavily-backed context prep on :8000) ─────────────────────
+
+  research: {
+    /**
+     * Run Tavily research for the company/role and bundle resume + JD into a
+     * markdown context_file the AI Core can ingest verbatim.
+     */
+    prepare: (body: {
+      resume: string;
+      job_description: string;
+      company: string;
+      role_type: string;
+    }) =>
+      request<{
+        context_file: string;
+        company: string;
+        role: string;
+        sources_count: number;
+      }>(`${BACKEND_URL}/api/research/prepare`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+  },
+
   // ── AI Core (new microservice on :8001) ────────────────────────────────
 
   aiCore: {

@@ -99,11 +99,49 @@ export default function PracticeSetupPage() {
     setFocusArea(t.defaultFocus);
   };
 
+  const [progress, setProgress] = useState<string>("");
+
+  const handleResumeFile = async (file: File) => {
+    if (!file) return;
+    if (file.size > 1_000_000) {
+      setError("Resume file too large — paste a summary instead");
+      return;
+    }
+    if (!/\.(txt|md|markdown)$/i.test(file.name)) {
+      setError("Only .txt or .md files are supported. Paste your resume into the box for other formats.");
+      return;
+    }
+    const text = await file.text();
+    setResume(text);
+    setError(null);
+  };
+
   const handleStart = async () => {
     setLoading(true);
     setError(null);
+    setProgress("");
 
     try {
+      // Step 1: research + context build (Tavily on legacy backend)
+      let contextFile = "";
+      if (company || resume || jobDescription) {
+        setProgress(company ? `Researching ${company}…` : "Building interview context…");
+        try {
+          const research = await api.research.prepare({
+            resume,
+            job_description: jobDescription,
+            company,
+            role_type: roleType,
+          });
+          contextFile = research.context_file;
+        } catch (researchErr) {
+          // Non-fatal — AI Core can still derive from raw resume/JD
+          console.warn("Research step failed, continuing without it:", researchErr);
+        }
+      }
+
+      // Step 2: start AI Core session with the prepared context
+      setProgress("Setting up interviewer…");
       const res = await api.aiCore.startSession({
         session_type: sessionType,
         duration_minutes: selectedType.defaultDuration,
@@ -114,6 +152,7 @@ export default function PracticeSetupPage() {
         resume,
         job_description: jobDescription,
         difficulty,
+        context_file: contextFile,
       });
 
       const params = new URLSearchParams({
@@ -129,6 +168,7 @@ export default function PracticeSetupPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to start session");
       setLoading(false);
+      setProgress("");
     }
   };
 
@@ -272,25 +312,48 @@ export default function PracticeSetupPage() {
         {/* Optional: Resume + JD */}
         <section>
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-            Context (Optional)
+            Context (Optional but recommended)
           </h2>
+          <p className="mb-3 text-xs text-gray-500">
+            The researcher uses your resume + the company name to fetch interview signal,
+            then the AI interviewer uses that to shape its persona and questions.
+          </p>
           <div className="space-y-3">
-            <textarea
-              value={resume}
-              onChange={(e) => setResume(e.target.value)}
-              placeholder="Paste your resume or a summary of your experience..."
-              rows={4}
-              maxLength={8000}
-              className="w-full resize-none rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
-            />
-            <textarea
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the job description..."
-              rows={4}
-              maxLength={8000}
-              className="w-full resize-none rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
-            />
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                <span>Resume</span>
+                <label className="cursor-pointer rounded-full border border-gray-700 px-3 py-1 text-[10px] font-semibold normal-case tracking-normal text-gray-400 transition-colors hover:border-indigo-600 hover:text-indigo-300">
+                  Upload .txt / .md
+                  <input
+                    type="file"
+                    accept=".txt,.md,.markdown,text/plain,text/markdown"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleResumeFile(e.target.files[0])}
+                  />
+                </label>
+              </label>
+              <textarea
+                value={resume}
+                onChange={(e) => setResume(e.target.value)}
+                placeholder="Paste your resume or upload a .txt/.md file..."
+                rows={5}
+                maxLength={8000}
+                className="w-full resize-none rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                Job Description
+              </label>
+              <textarea
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                placeholder="Paste the job description..."
+                rows={4}
+                maxLength={8000}
+                className="w-full resize-none rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
+              />
+            </div>
           </div>
         </section>
 
@@ -305,7 +368,7 @@ export default function PracticeSetupPage() {
           disabled={loading}
           className="w-full rounded-full bg-indigo-600 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? "Starting session..." : `Start ${selectedType.label} →`}
+          {loading ? (progress || "Starting session...") : `Start ${selectedType.label} →`}
         </button>
       </div>
     </Layout>

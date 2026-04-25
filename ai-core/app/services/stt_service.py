@@ -41,12 +41,16 @@ async def transcribe_audio(audio_bytes: bytes, language: str = "en") -> str:
 
 async def _transcribe_elevenlabs(audio_bytes: bytes, language: str) -> str:
     """Transcribe using ElevenLabs STT."""
+    import io
     from elevenlabs.client import AsyncElevenLabs
     client = AsyncElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY", ""))
 
-    # ElevenLabs STT API — adjust based on SDK version
+    audio_file = io.BytesIO(audio_bytes)
+    audio_file.name = "audio.webm"
+
     result = await client.speech_to_text.convert(
-        audio=audio_bytes,
+        file=audio_file,
+        model_id="scribe_v1",
         language_code=language,
     )
     return result.text if hasattr(result, "text") else str(result)

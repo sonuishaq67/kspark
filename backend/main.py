@@ -80,6 +80,10 @@ async def health():
 from api.sessions import router as sessions_router
 app.include_router(sessions_router)
 
+# Research API (Tavily-backed context preparation)
+from api.research import router as research_router
+app.include_router(research_router)
+
 
 # WebSocket interview endpoint
 from speech.websocket_handler import handle_interview_websocket

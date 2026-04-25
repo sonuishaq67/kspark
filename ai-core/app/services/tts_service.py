@@ -24,30 +24,35 @@ async def synthesize_stream(text: str) -> AsyncGenerator[bytes, None]:
     """
     if is_mock_tts():
         logger.debug("TTS mock mode — returning empty audio")
-        # Yield a tiny silent MP3 frame so the client doesn't hang
         yield b""
         return
 
     voice_id = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
     model_id = os.getenv("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5")
+    api_key = os.getenv("ELEVENLABS_API_KEY", "")
 
     try:
         from elevenlabs.client import AsyncElevenLabs
-        client = AsyncElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY", ""))
+        client = AsyncElevenLabs(api_key=api_key)
 
-        audio_stream = await client.text_to_speech.convert(
+        # In elevenlabs>=1.x, AsyncElevenLabs.text_to_speech.convert returns an
+        # async iterator of bytes — do NOT await it.
+        audio_stream = client.text_to_speech.convert(
             voice_id=voice_id,
             text=text,
             model_id=model_id,
             output_format="mp3_44100_128",
         )
 
+        chunk_count = 0
         async for chunk in audio_stream:
             if chunk:
+                chunk_count += 1
                 yield chunk
+        logger.info("ElevenLabs TTS streamed %d chunks for %d chars", chunk_count, len(text))
 
     except Exception as exc:
-        logger.error("ElevenLabs TTS error: %s", exc)
+        logger.error("ElevenLabs TTS error: %s", exc, exc_info=True)
         yield b""
 
 
