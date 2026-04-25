@@ -11,12 +11,41 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
 export interface MicrophoneState {
   isRecording: boolean;
   volume: number;          // 0–1 live RMS volume for orb animation
   liveText: string;        // partial transcript echoed back from server
   startRecording: () => Promise<void>;
-  stopRecording: () => void;
+  stopRecording: () => boolean;
   error: string | null;
 }
 
@@ -38,6 +67,10 @@ export function useMicrophone({ ws, onServerEvent }: UseMicrophoneOptions): Micr
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const browserTranscriptRef = useRef("");
+  const liveTranscriptRef = useRef("");
+  const usingBrowserTranscriptRef = useRef(false);
 
   // Listen for transcript_chunk events echoed back from server
   useEffect(() => {
@@ -65,6 +98,81 @@ export function useMicrophone({ ws, onServerEvent }: UseMicrophoneOptions): Micr
     setVolume(0);
   }, []);
 
+  const stopSpeechRecognition = useCallback(() => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+    try {
+      recognition.stop();
+    } catch {
+      // Recognition may already be stopped.
+    }
+    recognitionRef.current = null;
+  }, []);
+
+  const startSpeechRecognition = useCallback(() => {
+    const Recognition =
+      window.SpeechRecognition ?? window.webkitSpeechRecognition;
+
+    if (!Recognition) {
+      usingBrowserTranscriptRef.current = false;
+      return;
+    }
+
+    const recognition = new Recognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    browserTranscriptRef.current = "";
+    liveTranscriptRef.current = "";
+    usingBrowserTranscriptRef.current = true;
+
+    recognition.onresult = (event) => {
+      let finalText = "";
+      let interimText = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        const text = result[0]?.transcript ?? "";
+        if (result.isFinal) {
+          finalText += text;
+        } else {
+          interimText += text;
+        }
+      }
+
+      if (finalText.trim()) {
+        browserTranscriptRef.current = `${browserTranscriptRef.current} ${finalText}`.trim();
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "transcript_chunk",
+            text: finalText.trim(),
+            is_final: true,
+          }));
+        }
+      }
+
+      const displayText = `${browserTranscriptRef.current} ${interimText}`.trim();
+      liveTranscriptRef.current = displayText;
+      setLiveText(displayText);
+    };
+
+    recognition.onerror = (event) => {
+      usingBrowserTranscriptRef.current = false;
+      setError(`Speech recognition failed: ${event.error}`);
+    };
+
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch {
+      usingBrowserTranscriptRef.current = false;
+      recognitionRef.current = null;
+    }
+  }, [ws]);
+
   const startRecording = useCallback(async () => {
     setError(null);
     setLiveText("");
@@ -77,6 +185,7 @@ export function useMicrophone({ ws, onServerEvent }: UseMicrophoneOptions): Micr
       return;
     }
     streamRef.current = stream;
+    startSpeechRecognition();
 
     // ── Volume tracking via Web Audio API ──────────────────────────────────
     const ctx = new AudioContext();
@@ -110,6 +219,7 @@ export function useMicrophone({ ws, onServerEvent }: UseMicrophoneOptions): Micr
 
     recorder.ondataavailable = (e) => {
       if (e.data.size === 0 || !ws || ws.readyState !== WebSocket.OPEN) return;
+      if (usingBrowserTranscriptRef.current) return;
       const reader = new FileReader();
       reader.onloadend = () => {
         const b64 = (reader.result as string).split(",")[1];
@@ -125,14 +235,25 @@ export function useMicrophone({ ws, onServerEvent }: UseMicrophoneOptions): Micr
 
     recorder.start(250); // send a chunk every 250ms
     setIsRecording(true);
-  }, [ws]);
+  }, [ws, startSpeechRecognition]);
 
   const stopRecording = useCallback(() => {
     const recorder = recorderRef.current;
-    if (!recorder) return;
+    if (!recorder) return false;
+
+    const finalTranscript = (
+      liveTranscriptRef.current ||
+      browserTranscriptRef.current
+    ).trim();
+    const shouldSendSpeechEnded = !usingBrowserTranscriptRef.current || Boolean(finalTranscript);
+
+    if (!finalTranscript && usingBrowserTranscriptRef.current) {
+      setError("I did not catch any speech. Try speaking again, then stop.");
+    }
 
     recorder.stop();
     recorderRef.current = null;
+    stopSpeechRecognition();
 
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -141,19 +262,29 @@ export function useMicrophone({ ws, onServerEvent }: UseMicrophoneOptions): Micr
     setIsRecording(false);
 
     // Tell server speech ended — it will run STT + LLM + TTS
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "speech_ended", final_transcript: "" }));
+    if (ws?.readyState === WebSocket.OPEN && shouldSendSpeechEnded) {
+      ws.send(JSON.stringify({
+        type: "speech_ended",
+        final_transcript: finalTranscript,
+      }));
+      return true;
     }
-  }, [ws, stopVolumeTracking]);
+
+    if (ws?.readyState !== WebSocket.OPEN) {
+      setError("Interview connection is not ready. Please refresh and try again.");
+    }
+    return false;
+  }, [ws, stopVolumeTracking, stopSpeechRecognition]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       recorderRef.current?.stop();
+      stopSpeechRecognition();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       stopVolumeTracking();
     };
-  }, [stopVolumeTracking]);
+  }, [stopVolumeTracking, stopSpeechRecognition]);
 
   return { isRecording, volume, liveText, startRecording, stopRecording, error };
 }

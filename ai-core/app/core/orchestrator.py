@@ -276,7 +276,10 @@ async def end_session(session_id: str) -> EvaluationReport:
     from app.agents.evaluator import generate_report
     report = await generate_report(session, ctx)
 
-    # Clean up
+    from app.models.session import store_report
+    store_report(report)
+
+    # Clean up active runtime state, but keep the completed report fetchable.
     remove_session(session_id)
     _context_cache.pop(session_id, None)
 

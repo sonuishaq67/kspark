@@ -178,7 +178,11 @@ async def get_report(session_id: str):
     Get the evaluation report for a completed session.
     If the session is still active, ends it first.
     """
-    from app.models.session import get_session
+    from app.models.session import get_report as get_stored_report, get_session
+    stored_report = get_stored_report(session_id)
+    if stored_report:
+        return stored_report
+
     session = get_session(session_id)
     if not session:
         raise HTTPException(404, f"Session {session_id} not found or already ended")

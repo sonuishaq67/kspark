@@ -58,6 +58,7 @@ async def chat(
 async def chat_json(
     messages: list[dict[str, str]],
     model: str | None = None,
+    max_tokens: int = 1024,
 ) -> dict[str, Any]:
     """Chat with JSON mode enforced. Returns parsed dict."""
     if is_mock_mode():
@@ -75,7 +76,7 @@ async def chat_json(
         model=model,
         messages=messages,
         temperature=0.2,
-        max_tokens=512,
+        max_tokens=max_tokens,
         response_format={"type": "json_object"},
     )
     raw = response.choices[0].message.content or "{}"

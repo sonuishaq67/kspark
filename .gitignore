@@ -90,3 +90,9 @@ coverage/
 
 # Docker
 docker-compose.override.yml
+
+# Other projects in workspace (not part of this repo)
+Meridian-Voice-agent/
+ai-mock-interview/
+env.zip
+ai microservice.md

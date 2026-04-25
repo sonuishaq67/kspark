@@ -230,6 +230,9 @@ export const api = {
         method: "POST",
       }),
 
+    getReport: (sessionId: string) =>
+      request<AICoreReport>(`${AI_CORE_URL}/sessions/${sessionId}/report`),
+
     getStatus: (sessionId: string) =>
       request<{
         session_id: string;

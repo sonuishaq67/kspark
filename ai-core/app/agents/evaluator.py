@@ -69,7 +69,7 @@ Generate the evaluation report as JSON."""
     ]
 
     try:
-        result = await chat_json(messages)
+        result = await chat_json(messages, max_tokens=1800)
         return _parse_report(session.session_id, session.session_type.value, result)
     except Exception as exc:
         logger.error("Report generation failed: %s", exc)

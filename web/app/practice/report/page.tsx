@@ -5,13 +5,12 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Layout from "@/components/shared/Layout";
 import FollowUpAnalysis from "@/components/roleready/FollowUpAnalysis";
-import GapProgressSection from "@/components/roleready/GapProgressSection";
 import NextPracticePlan from "@/components/roleready/NextPracticePlan";
 import ReportSummary from "@/components/roleready/ReportSummary";
 import ScoreCard from "@/components/roleready/ScoreCard";
 import StepProgress from "@/components/roleready/StepProgress";
 import { ApiError, api } from "@/lib/api";
-import { ReportResponse, ReportScores } from "@/lib/types";
+import { AICoreReport, GapReportItem, ReportResponse, ReportScores } from "@/lib/types";
 
 const SCORE_JUSTIFICATIONS: Record<keyof ReportScores, string> = {
   role_alignment: "How tightly your answers matched the target role and its expected priorities.",
@@ -20,6 +19,57 @@ const SCORE_JUSTIFICATIONS: Record<keyof ReportScores, string> = {
   evidence_strength: "How well you backed claims with concrete examples, outcomes, and metrics.",
   followup_recovery: "How effectively you improved once the interviewer probed a weak area.",
 };
+
+function gapTone(status: GapReportItem["status"]) {
+  if (status === "closed") {
+    return "border-green-700/40 bg-green-950/30 text-green-200";
+  }
+  if (status === "improved") {
+    return "border-amber-700/40 bg-amber-950/30 text-amber-200";
+  }
+  return "border-red-700/40 bg-red-950/30 text-red-200";
+}
+
+function mapAICoreReport(report: AICoreReport): ReportResponse {
+  const scoreFor = (dimension: keyof ReportScores) => {
+    const normalized = dimension.replace(/_/g, " ");
+    const match = report.metric_scores.find((item) =>
+      item.metric.toLowerCase().replace(/_/g, " ").includes(normalized)
+    );
+    return match?.score ?? report.overall_score ?? 0;
+  };
+
+  const now = new Date().toISOString();
+  return {
+    session_id: report.session_id,
+    target_role: report.session_type.replace(/_/g, " ").toLowerCase(),
+    started_at: now,
+    ended_at: now,
+    readiness_score: report.overall_score,
+    summary: `Overall interview score: ${report.overall_score}/10. ${
+      report.strengths[0] ?? "Keep practicing with concrete examples and concise structure."
+    }`,
+    strengths: report.strengths,
+    gaps: report.weaknesses.map((weakness) => ({
+      label: weakness,
+      status: "open",
+      evidence: report.weakest_answer || weakness,
+    })),
+    scores: {
+      role_alignment: scoreFor("role_alignment"),
+      technical_clarity: scoreFor("technical_clarity"),
+      communication: scoreFor("communication"),
+      evidence_strength: scoreFor("evidence_strength"),
+      followup_recovery: scoreFor("followup_recovery"),
+    },
+    follow_up_analysis: report.metric_scores.map((item) => ({
+      question: item.metric,
+      reason: item.rationale,
+      candidate_response_quality: item.score >= 8 ? "strong" : item.score >= 5 ? "partial" : "weak",
+    })),
+    next_practice_plan: report.action_plan,
+  };
+}
 
 function PracticeReportContent() {
   const searchParams = useSearchParams();
@@ -45,18 +95,40 @@ function PracticeReportContent() {
       setError(null);
 
       try {
-        const response = await api.getReport(sessionId);
+        const cached = sessionStorage.getItem(`ai-core-report:${sessionId}`);
+        if (cached) {
+          const response = mapAICoreReport(JSON.parse(cached) as AICoreReport);
+          if (!cancelled) {
+            setReport(response);
+            setNotReady(false);
+          }
+          return;
+        }
+
+        const aiCoreReport = await api.aiCore.getReport(sessionId);
         if (!cancelled) {
-          setReport(response);
+          sessionStorage.setItem(`ai-core-report:${sessionId}`, JSON.stringify(aiCoreReport));
+          setReport(mapAICoreReport(aiCoreReport));
           setNotReady(false);
         }
       } catch (err) {
         if (cancelled) return;
-        if (err instanceof ApiError && err.status === 404) {
-          setNotReady(true);
-          setReport(null);
-        } else {
-          setError(err instanceof Error ? err.message : "Failed to load report.");
+        try {
+          const response = await api.getReport(sessionId);
+          if (!cancelled) {
+            setReport(response);
+            setNotReady(false);
+          }
+        } catch (legacyErr) {
+          if (legacyErr instanceof ApiError && legacyErr.status === 404) {
+            setNotReady(true);
+            setReport(null);
+          } else {
+            setError(legacyErr instanceof Error ? legacyErr.message : "Failed to load report.");
+          }
+        }
+        if (!(err instanceof ApiError && err.status === 404)) {
+          console.warn("AI Core report load failed, tried legacy backend:", err);
         }
       } finally {
         if (!cancelled) {
@@ -79,12 +151,22 @@ function PracticeReportContent() {
     setError(null);
 
     try {
-      await api.finishSession(sessionId);
-      const response = await api.getReport(sessionId);
-      setReport(response);
+      const aiCoreReport = await api.aiCore.endSession(sessionId);
+      sessionStorage.setItem(`ai-core-report:${sessionId}`, JSON.stringify(aiCoreReport));
+      setReport(mapAICoreReport(aiCoreReport));
       setNotReady(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate report.");
+      try {
+        await api.finishSession(sessionId);
+        const response = await api.getReport(sessionId);
+        setReport(response);
+        setNotReady(false);
+      } catch (legacyErr) {
+        setError(legacyErr instanceof Error ? legacyErr.message : "Failed to generate report.");
+      }
+      if (!(err instanceof ApiError && err.status === 404)) {
+        console.warn("AI Core report generation failed, tried legacy backend:", err);
+      }
     } finally {
       setGenerating(false);
     }
@@ -96,45 +178,38 @@ function PracticeReportContent() {
         <StepProgress activeStep={5} />
 
         {loading ? (
-          <div className="flex items-center gap-3 rounded-3xl glass p-8 text-sm text-gray-400">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
+          <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-8 text-sm text-gray-400">
             Loading report...
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-5 text-sm text-rose-200">
+          <div className="rounded-2xl border border-red-800/50 bg-red-950/30 p-5 text-sm text-red-200">
             {error}
           </div>
         ) : notReady ? (
-          <div className="relative overflow-hidden rounded-3xl glass-strong p-10">
-            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-3xl" />
-            <div className="absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
-            <div className="relative">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-indigo-200">
-                Step 5
-              </span>
-              <h1 className="mt-5 text-balance text-3xl font-bold tracking-tight md:text-4xl">
-                Your <span className="text-gradient">report is waiting</span> to be built.
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-400">
-                The interview has not been finalized yet. Generate the report to score the session, capture the main gaps, and build the next practice plan.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button
-                  onClick={handleGenerateReport}
-                  disabled={generating}
-                  className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-fuchsia-500/30 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
-                  {generating ? "Generating..." : "Generate report"}
-                  {!generating && <span aria-hidden>→</span>}
-                </button>
-                <Link
-                  href="/dashboard"
-                  className="rounded-full glass px-6 py-3 text-sm font-semibold text-gray-200 glass-hover"
-                >
-                  Back to dashboard
-                </Link>
-              </div>
+          <div className="rounded-3xl border border-gray-800 bg-gray-900/70 p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-indigo-300">
+              Step 5
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-gray-100">
+              Report not ready
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-400">
+              The interview has not been finalized yet. Generate the report to score the session, capture the main gaps, and build the next practice plan.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                onClick={handleGenerateReport}
+                disabled={generating}
+                className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {generating ? "Generating..." : "Generate Report"}
+              </button>
+              <Link
+                href="/dashboard"
+                className="rounded-full border border-gray-700 px-5 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+              >
+                Back to Dashboard
+              </Link>
             </div>
           </div>
         ) : report ? (
@@ -160,46 +235,57 @@ function PracticeReportContent() {
               )}
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-2">
-              <div className="rounded-3xl glass p-6">
+            <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-6">
                 <h2 className="text-lg font-semibold text-gray-100">Strengths</h2>
-                <p className="mt-2 text-sm text-gray-400">
-                  These are the behaviors and skills you demonstrated well during the interview.
-                </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-gray-300">
                   {report.strengths.map((item, index) => (
                     <li key={`${item}-${index}`} className="flex gap-3">
-                      <span className="mt-1 text-emerald-400">✓</span>
+                      <span className="mt-1 text-green-300">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <GapProgressSection
-                gaps={report.gaps}
-                title="Areas for Improvement"
-                description="Skills and knowledge areas that need focused practice"
-              />
+              <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-6">
+                <h2 className="text-lg font-semibold text-gray-100">Gaps</h2>
+                <div className="mt-4 space-y-3">
+                  {report.gaps.map((gap, index) => (
+                    <article
+                      key={`${gap.label}-${index}`}
+                      className={`rounded-2xl border p-4 ${gapTone(gap.status)}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-sm font-semibold">{gap.label}</h3>
+                        <span className="rounded-full border border-current/30 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                          {gap.status}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-current/90">
+                        {gap.evidence || "No evidence recorded."}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </section>
 
             <FollowUpAnalysis items={report.follow_up_analysis} />
             <NextPracticePlan items={report.next_practice_plan} />
 
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="flex flex-wrap gap-3">
               <Link
                 href="/practice/setup"
-                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-fuchsia-500/30"
+                className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
               >
-                <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
-                Start another session
-                <span aria-hidden>→</span>
+                Start Another Session
               </Link>
               <Link
                 href="/dashboard"
-                className="rounded-full glass px-6 py-3 text-sm font-semibold text-gray-200 glass-hover"
+                className="rounded-full border border-gray-700 px-5 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
               >
-                Back to dashboard
+                Back to Dashboard
               </Link>
             </div>
           </>
@@ -214,8 +300,7 @@ export default function PracticeReportPage() {
     <Suspense
       fallback={
         <Layout>
-          <div className="flex items-center gap-3 rounded-3xl glass p-8 text-sm text-gray-400">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
+          <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-8 text-sm text-gray-400">
             Loading report...
           </div>
         </Layout>

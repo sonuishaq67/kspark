@@ -8,6 +8,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.models.evaluation import EvaluationReport
+
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
@@ -152,6 +154,7 @@ class InterviewSession:
 # ── In-process session store ──────────────────────────────────────────────────
 
 _sessions: dict[str, InterviewSession] = {}
+_reports: dict[str, EvaluationReport] = {}
 
 
 def store_session(session: InterviewSession) -> None:
@@ -168,3 +171,11 @@ def remove_session(session_id: str) -> None:
 
 def list_sessions() -> list[InterviewSession]:
     return list(_sessions.values())
+
+
+def store_report(report: EvaluationReport) -> None:
+    _reports[report.session_id] = report
+
+
+def get_report(session_id: str) -> EvaluationReport | None:
+    return _reports.get(session_id)

@@ -93,6 +93,7 @@ export interface AICoreReport {
   weakest_answer: string;
   improved_answer_example: string;
   action_plan: string[];
+  raw_feedback?: string;
 }
 
 // ── Live code review ─────────────────────────────────────────────────────────
@@ -123,6 +124,8 @@ export interface CodeReview {
 export type ServerEvent =
   | { type: "interviewer_text_delta"; delta: string; is_final: boolean }
   | { type: "interviewer_audio_chunk"; data: string }
+  | { type: "interviewer_audio_done" }
+  | { type: "candidate_transcript"; text: string; answer_number: number }
   | { type: "selected_question"; question: string; phase: string }
   | { type: "phase_update"; phase: string; description: string; phase_index: number; total_phases: number }
   | { type: "timer_update"; time_remaining_seconds: number; current_phase: string }
