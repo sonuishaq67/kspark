@@ -1,4 +1,4 @@
-# Vard — Dashboard, Reporting & Landing Page
+# Varad — Dashboard, Reporting & Landing Page
 
 **Workstream:** Report generation endpoint, report UI (Step 5), dashboard rebrand, landing page, session history, eval cases.
 
@@ -422,7 +422,7 @@ In `web/app/dashboard/page.tsx`, when `MOCK_LLM=1` and sessions list is empty, r
 
 ---
 
-## Definition of Done (Vard)
+## Definition of Done (Varad)
 
 - [ ] `POST /api/sessions/{id}/finish` returns full report JSON
 - [ ] `GET /api/sessions/{id}/report` returns stored report or 404

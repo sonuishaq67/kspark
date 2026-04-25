@@ -282,7 +282,7 @@ Client component. On mount:
 3. Render `InterviewRoom` component.
 
 On "Finish Interview":
-1. Call `POST /api/sessions/{id}/finish` (Vard's endpoint — stub with a `fetch` call).
+1. Call `POST /api/sessions/{id}/finish` (Varad's endpoint — stub with a `fetch` call).
 2. Navigate to `/practice/report?session_id={id}`.
 
 ---

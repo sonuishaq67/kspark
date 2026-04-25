@@ -35,7 +35,7 @@ graph TB
             MOCK2[Mock Turn Handler]
         end
         
-        subgraph Vard ["Vard's Module: Reporting"]
+        subgraph Varad ["Varad's Module: Reporting"]
             FIN[POST /api/sessions/:id/finish]
             REP[GET /api/sessions/:id/report]
             LIST[GET /api/sessions]
@@ -88,7 +88,7 @@ graph TB
 
     style Ishaq fill:#e1f5ff
     style Shivam fill:#fff4e1
-    style Vard fill:#ffe1f5
+    style Varad fill:#ffe1f5
 ```
 
 ---
@@ -184,7 +184,7 @@ Return TurnResponse (ai_response, detected_strengths, missing_gap, guardrail_act
 Frontend updates transcript + LiveGapPanel
 ```
 
-### 3. Report Flow (Vard)
+### 3. Report Flow (Varad)
 ```
 User clicks "Finish Interview"
   ↓
@@ -249,7 +249,7 @@ interface CreateSessionRequest {
 }
 ```
 
-**API Contract (Output to Vard):**
+**API Contract (Output to Varad):**
 ```typescript
 interface TurnResponse {
   turn_id: string
@@ -263,7 +263,7 @@ interface TurnResponse {
 }
 ```
 
-### Vard's Module: Reporting & Dashboard
+### Varad's Module: Reporting & Dashboard
 **Owns:**
 - `backend/api/sessions.py` (adds `/finish` and extends `/report`)
 - `prompts/report_generator.md`
@@ -349,7 +349,7 @@ CREATE TABLE turns (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- New table by Vard (created in Ishaq's migration)
+-- New table by Varad (created in Ishaq's migration)
 CREATE TABLE reports (
     id TEXT PRIMARY KEY,
     session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
@@ -388,7 +388,7 @@ Mock responses defined in `backend/llm/mock_responses.py`:
 - `MOCK_RESPONSES["turn_classifier_complete"]` — Shivam
 - `MOCK_RESPONSES["followup_generator"]` — Shivam
 - `MOCK_RESPONSES["guardrail_learning"]` — Shivam
-- `MOCK_RESPONSES["report_generator"]` — Vard
+- `MOCK_RESPONSES["report_generator"]` — Varad
 
 ---
 

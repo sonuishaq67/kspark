@@ -23,7 +23,7 @@ database/
 
 **CRITICAL:** Only Ishaq touches `.sql` files directly.
 
-### For Shivam and Vard:
+### For Shivam and Varad:
 If you need a migration, create a request file:
 
 ```bash

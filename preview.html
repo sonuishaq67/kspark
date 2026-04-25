@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RoleReady AI - UI Design Prototype</title>
+  <style>
+    :root {
+      --bg: #f7f8fc;
+      --surface: #ffffff;
+      --surface-2: #f1f5ff;
+      --ink: #111827;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --primary: #4f46e5;
+      --primary-2: #6366f1;
+      --primary-soft: #eef2ff;
+      --success: #16a34a;
+      --success-soft: #dcfce7;
+      --warning: #d97706;
+      --warning-soft: #fef3c7;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --teal: #0f766e;
+      --teal-soft: #ccfbf1;
+      --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.07);
+      --radius-lg: 28px;
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(79, 70, 229, 0.12), transparent 34rem),
+        radial-gradient(circle at 90% 20%, rgba(20, 184, 166, 0.08), transparent 28rem),
+        var(--bg);
+    }
+
+    .prototype-shell {
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .prototype-header {
+      max-width: 1440px;
+      margin: 0 auto 20px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: var(--shadow-sm);
+      border-radius: 24px;
+      padding: 16px 18px;
+      position: sticky;
+      top: 14px;
+      z-index: 50;
+      backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 220px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), #06b6d4);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      box-shadow: 0 12px 30px rgba(79, 70, 229, 0.28);
+    }
+
+    .brand-title { font-weight: 800; letter-spacing: -0.035em; font-size: 18px; }
+    .brand-subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tab-button {
+      border: 1px solid transparent;
+      background: transparent;
+      color: #475569;
+      padding: 10px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: 0.18s ease;
+    }
+
+    .tab-button:hover { background: #f1f5f9; color: var(--ink); }
+    .tab-button.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: #c7d2fe;
+    }
+
+    .prototype-meta {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+      min-width: 190px;
+    }
+
+    .screen-wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .screen {
+      display: none;
+      min-height: 780px;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .screen.active { display: block; }
+
+    .app-topbar {
+      height: 72px;
+      padding: 0 30px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .app-nav {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .app-nav a {
+      text-decoration: none;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 9px 12px;
+      border-radius: 999px;
+    }
+
+    .app-nav a.active, .app-nav a:hover {
+      background: #f1f5f9;
+      color: var(--ink);
+    }
+
+    .top-actions { display: flex; gap: 10px; align-items: center; }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 14px 32px rgba(79, 70, 229, 0.24);
+    }
+
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 18px 40px rgba(79, 70, 229, 0.3); }
+    .btn-secondary { background: white; color: var(--ink); border: 1px solid var(--line); }
+    .btn-secondary:hover { background: #f8fafc; }
+    .btn-ghost { background: transparent; color: #475569; border: 1px solid transparent; }
+    .btn-danger-soft { background: var(--danger-soft); color: var(--danger); }
+    .btn-muted { background: #f1f5f9; color: #334155; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 12px;
+      border: 1px solid transparent;
+    }
+
+    .badge-primary { color: var(--primary); background: var(--primary-soft); border-color: #c7d2fe; }
+    .badge-success { color: var(--success); background: var(--success-soft); border-color: #bbf7d0; }
+    .badge-warning { color: var(--warning); background: var(--warning-soft); border-color: #fde68a; }
+    .badge-danger { color: var(--danger); background: var(--danger-soft); border-color: #fecaca; }
+    .badge-teal { color: var(--teal); background: var(--teal-soft); border-color: #99f6e4; }
+    .badge-gray { color: #475569; background: #f1f5f9; border-color: #e2e8f0; }
+
+    .hero {
+      padding: 72px 52px 40px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(390px, 0.95fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 900;
+      font-size: 12px;
+      border: 1px solid #c7d2fe;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      font-size: clamp(42px, 6vw, 74px);
+      line-height: 0.96;
+      letter-spacing: -0.07em;
+      margin-bottom: 22px;
+    }
+
+    h2 { font-size: 34px; line-height: 1.05; letter-spacing: -0.045em; margin-bottom: 10px; }
+    h3 { font-size: 18px; letter-spacing: -0.025em; margin-bottom: 8px; }
+    p { color: var(--muted); line-height: 1.65; }
+
+    .hero-lede {
+      font-size: 19px;
+      max-width: 760px;
+      color: #475569;
+      margin-bottom: 30px;
+    }
+
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
+
+    .trust-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mini-window {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow: hidden;
+      background: #fbfdff;
+    }
+
+    .window-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: white;
+    }
+
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; }
+    .dot:nth-child(1) { background: #fca5a5; }
+    .dot:nth-child(2) { background: #fcd34d; }
+    .dot:nth-child(3) { background: #86efac; }
+
+    .mini-window-body { padding: 18px; }
+
+    .gap-preview {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .preview-col {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: white;
+    }
+
+    .preview-col h4 {
+      margin: 0 0 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+    }
+
+    .skill-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      margin: 3px 3px 4px 0;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      color: #334155;
+    }
+
+    .feature-grid {
+      padding: 0 52px 58px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .feature-card, .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      background: var(--primary-soft);
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+
+    .content-pad { padding: 30px; }
+
+    .stepper {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 999px;
+      color: #64748b;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .step-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+    }
+
+    .step.active { background: var(--primary-soft); color: var(--primary); border-color: #c7d2fe; }
+    .step.active .step-number { background: var(--primary); color: white; }
+    .step.done { background: #f0fdf4; color: var(--success); border-color: #bbf7d0; }
+    .step.done .step-number { background: var(--success); color: white; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    label {
+      display: block;
+      font-weight: 800;
+      font-size: 13px;
+      color: #334155;
+      margin-bottom: 8px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--ink);
+      border-radius: 15px;
+      padding: 13px 14px;
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: 0.18s ease;
+    }
+
+    textarea { min-height: 150px; resize: vertical; line-height: 1.55; }
+    input:focus, textarea:focus, select:focus {
+      border-color: #a5b4fc;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field { margin-bottom: 16px; }
+
+    .analysis-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .analysis-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: #fbfdff;
+      border-radius: 16px;
+    }
+
+    .check {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--success-soft);
+      color: var(--success);
+      font-weight: 900;
+      flex: 0 0 auto;
+      font-size: 13px;
+    }
+
+    .score-hero {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .score-card-main {
+      background: linear-gradient(135deg, #1e1b4b, #4f46e5);
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: 0 20px 52px rgba(79, 70, 229, 0.28);
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .score-number {
+      font-size: 72px;
+      line-height: 0.9;
+      letter-spacing: -0.08em;
+      font-weight: 900;
+    }
+
+    .score-card-main p { color: rgba(255,255,255,0.78); margin: 0; }
+
+    .gap-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .gap-column {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      min-height: 285px;
+    }
+
+    .gap-column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .gap-row {
+      border: 1px solid var(--line);
+      background: #fbfdff;
+      border-radius: 16px;
+      padding: 13px;
+      margin-bottom: 10px;
+    }
+
+    .gap-row strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .gap-row span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .focus-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .focus-card {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 18px;
+      padding: 15px;
+    }
+
+    .focus-card strong { display: block; font-size: 14px; margin-bottom: 5px; }
+    .focus-card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+    .prep-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      gap: 22px;
+    }
+
+    .prep-list {
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .prep-list li {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 15px;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 16px;
+    }
+
+    .prep-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+    }
+
+    .prep-visual {
+      background: linear-gradient(135deg, #ffffff, #eef2ff);
+      border: 1px solid #c7d2fe;
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      min-height: 430px;
+    }
+
+    .topic-stack { display: grid; gap: 12px; margin-top: 18px; }
+    .topic-card {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 15px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+      border-radius: 16px;
+    }
+
+    .topic-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: var(--teal-soft);
+      color: var(--teal);
+      font-weight: 900;
+    }
+
+    .interview-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 330px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .side-state, .live-panel, .chat-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .side-state, .live-panel { padding: 18px; }
+
+    .state-metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      margin-bottom: 10px;
+      background: #fbfdff;
+    }
+
+    .state-metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .state-metric strong { font-size: 15px; }
+
+    .progress-bar {
+      height: 9px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #06b6d4); border-radius: inherit; }
+
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 645px;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: #fbfdff;
+    }
+
+    .chat-thread {
+      padding: 20px;
+      flex: 1;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+      overflow: auto;
+      background:
+        linear-gradient(rgba(255,255,255,0.72), rgba(255,255,255,0.72)),
+        radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.08), transparent 22rem);
+    }
+
+    .message {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      max-width: 88%;
+    }
+
+    .message.user {
+      grid-template-columns: minmax(0, 1fr) 38px;
+      margin-left: auto;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: white;
+      background: var(--primary);
+      font-size: 12px;
+    }
+
+    .message.user .avatar { background: #0f172a; }
+
+    .bubble {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 18px;
+      padding: 13px 14px;
+      box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+      color: #334155;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .message.user .bubble {
+      background: #0f172a;
+      color: white;
+      border-color: #0f172a;
+    }
+
+    .message.guardrail { max-width: 95%; }
+    .message.guardrail .bubble {
+      background: var(--danger-soft);
+      border-color: #fecaca;
+      color: #7f1d1d;
+    }
+
+    .chat-composer {
+      padding: 16px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      background: white;
+    }
+
+    .live-item {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fbfdff;
+      margin-bottom: 12px;
+    }
+
+    .live-item small {
+      display: block;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    .live-item strong { display: block; margin-bottom: 4px; }
+    .live-item p { margin: 0; font-size: 13px; line-height: 1.5; }
+
+    .report-hero {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .report-summary {
+      background: linear-gradient(135deg, #0f172a, #312e81);
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .report-summary p { color: rgba(255,255,255,0.78); }
+    .score-list { display: grid; gap: 12px; }
+
+    .score-line {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+    }
+
+    .score-line-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 9px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .bullet-list {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .bullet-list li {
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: #fbfdff;
+      border-radius: 14px;
+      color: #334155;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .stat-card span { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.07em; }
+    .stat-card strong { display: block; font-size: 30px; letter-spacing: -0.06em; margin-top: 7px; }
+
+    .session-list { display: grid; gap: 14px; }
+
+    .session-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .session-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .mini-chart {
+      height: 210px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        linear-gradient(to top, rgba(79,70,229,0.12), transparent 54%),
+        repeating-linear-gradient(to top, transparent, transparent 39px, #e2e8f0 40px),
+        white;
+      position: relative;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .chart-line {
+      position: absolute;
+      inset: 34px 20px 46px;
+      border-bottom: 4px solid var(--primary);
+      border-left: 4px solid transparent;
+      transform: skewY(-8deg);
+      border-radius: 999px;
+    }
+
+    .design-note {
+      max-width: 1440px;
+      margin: 18px auto 0;
+      color: #64748b;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 1180px) {
+      .hero, .two-col, .prep-layout, .report-hero, .dashboard-layout, .score-hero { grid-template-columns: 1fr; }
+      .feature-grid, .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .interview-grid { grid-template-columns: 1fr; }
+      .gap-columns, .focus-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 740px) {
+      .prototype-shell { padding: 12px; }
+      .prototype-header { position: static; }
+      .screen { border-radius: 24px; }
+      .app-topbar { height: auto; padding: 16px; flex-wrap: wrap; }
+      .content-pad, .hero { padding: 24px 18px; }
+      .feature-grid { padding: 0 18px 28px; grid-template-columns: 1fr; }
+      .form-grid, .three-col, .gap-columns, .focus-grid, .report-grid, .stats-row { grid-template-columns: 1fr; }
+      .gap-preview { grid-template-columns: 1fr; }
+      .chat-composer { grid-template-columns: 1fr; }
+      .message, .message.user { max-width: 100%; }
+      h1 { font-size: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="prototype-shell">
+    <header class="prototype-header">
+      <div class="brand">
+        <div class="brand-mark">RR</div>
+        <div>
+          <div class="brand-title">RoleReady AI UI Designs</div>
+          <div class="brand-subtitle">Hackathon MVP prototype</div>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Prototype screens">
+        <button class="tab-button active" data-screen="landing">Landing</button>
+        <button class="tab-button" data-screen="setup">Setup</button>
+        <button class="tab-button" data-screen="gapmap">Gap Map</button>
+        <button class="tab-button" data-screen="prep">Prep Brief</button>
+        <button class="tab-button" data-screen="interview">Interview</button>
+        <button class="tab-button" data-screen="report">Report</button>
+        <button class="tab-button" data-screen="dashboard">Dashboard</button>
+      </nav>
+      <div class="prototype-meta">
+        Clean SaaS + education coach<br />Typed demo mode first, voice optional
+      </div>
+    </header>
+
+    <main class="screen-wrap">
+      <section id="landing" class="screen active">
+        <div class="app-topbar">
+          <div class="brand">
+            <div class="brand-mark">RR</div>
+            <div>
+              <div class="brand-title">RoleReady AI</div>
+              <div class="brand-subtitle">Gap-aware interview prep</div>
+            </div>
+          </div>
+          <div class="app-nav">
+            <a href="#" class="active">Home</a>
+            <a href="#">Dashboard</a>
+            <a href="#">Practice</a>
+            <a href="#">Reports</a>
+          </div>
+          <div class="top-actions">
+            <button class="btn btn-secondary">View Demo</button>
+            <button class="btn btn-primary">Start Practice</button>
+          </div>
+        </div>
+        <div class="hero">
+          <div>
+            <div class="eyebrow">Built for student interview readiness</div>
+            <h1>Prepare for the interview you are actually applying for.</h1>
+            <p class="hero-lede">RoleReady compares your resume with a job description, finds readiness gaps, and runs an adaptive mock interview that helps you improve without giving you scripted answers.</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary">Start Practice</button>
+              <button class="btn btn-secondary">Load Demo Session</button>
+            </div>
+            <div class="trust-row">
+              <span class="badge badge-primary">JD + resume analysis</span>
+              <span class="badge badge-teal">Adaptive follow-ups</span>
+              <span class="badge badge-danger">Ghostwriting guardrail</span>
+              <span class="badge badge-success">Learning report</span>
+            </div>
+          </div>
+          <div class="hero-card">
+            <div class="mini-window">
+              <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+              <div class="mini-window-body">
+                <span class="badge badge-primary">Backend Engineer Intern</span>
+                <h2 style="margin-top:16px;">Readiness diagnosis</h2>
+                <p>Strong backend foundation. Needs stronger database scaling evidence and measurable impact.</p>
+                <div class="gap-preview">
+                  <div class="preview-col">
+                    <h4>Strong</h4>
+                    <span class="skill-pill">Python</span>
+                    <span class="skill-pill">REST APIs</span>
+                    <span class="skill-pill">Git</span>
+                  </div>
+                  <div class="preview-col">
+                    <h4>Partial</h4>
+                    <span class="skill-pill">SQL</span>
+                    <span class="skill-pill">Auth</span>
+                    <span class="skill-pill">Cloud</span>
+                  </div>
+                  <div class="preview-col">
+                    <h4>Gaps</h4>
+                    <span class="skill-pill">Scaling</span>
+                    <span class="skill-pill">Metrics</span>
+                    <span class="skill-pill">Debugging</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card"><div class="feature-icon">1</div><h3>Analyze JD + Resume</h3><p>Extract role requirements and candidate evidence.</p></div>
+          <div class="feature-card"><div class="feature-icon">2</div><h3>Find Readiness Gaps</h3><p>Separate strong matches, partial matches, and weak areas.</p></div>
+          <div class="feature-card"><div class="feature-icon">3</div><h3>Practice Adaptively</h3><p>Ask follow-ups based on what the candidate missed.</p></div>
+          <div class="feature-card"><div class="feature-icon">4</div><h3>Report Learning Plan</h3><p>Show strengths, gaps, follow-up reasons, and next steps.</p></div>
+        </div>
+      </section>
+
+      <section id="setup" class="screen">
+        <div class="app-topbar">
+          <div class="brand"><div class="brand-mark">RR</div><div><div class="brand-title">RoleReady AI</div><div class="brand-subtitle">New practice session</div></div></div>
+          <div class="top-actions"><span class="badge badge-teal">Demo-safe typed mode</span><button class="btn btn-muted">Reset</button></div>
+        </div>
+        <div class="content-pad">
+          <div class="stepper">
+            <div class="step active"><span class="step-number">1</span>Setup</div>
+            <div class="step"><span class="step-number">2</span>Gap Map</div>
+            <div class="step"><span class="step-number">3</span>Prep</div>
+            <div class="step"><span class="step-number">4</span>Interview</div>
+            <div class="step"><span class="step-number">5</span>Report</div>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <h2>Tell us what interview you are preparing for.</h2>
+              <p>Paste the target job description and your resume. The app will turn this into a role-specific practice session.</p>
+              <div class="form-grid">
+                <div class="field"><label>Target role</label><input value="Backend Engineer Intern" /></div>
+                <div class="field"><label>Company name optional</label><input placeholder="Example: Amazon" /></div>
+              </div>
+              <div class="field"><label>Interview type</label><select><option>Mixed - technical + behavioral</option><option>Technical only</option><option>Behavioral only</option></select></div>
+              <div class="field"><label>Job description</label><textarea>We are looking for a backend engineering intern with experience in Python, REST APIs, SQL databases, authentication, debugging, cloud basics, and strong communication.</textarea></div>
+              <div class="field"><label>Resume / CV</label><textarea>Built a Flask API for a class project, collaborated with a team using Git, implemented basic endpoints, and presented the project demo. Familiar with Python and web development.</textarea></div>
+              <button class="btn btn-primary">Analyze Readiness</button>
+            </div>
+            <div class="card">
+              <span class="badge badge-primary">What RoleReady analyzes</span>
+              <h2 style="margin-top:14px;">From generic prep to role-specific learning.</h2>
+              <div class="analysis-list">
+                <div class="analysis-item"><div class="check">1</div><div><strong>Role requirements</strong><p>Skills, responsibilities, and likely interview topics from the JD.</p></div></div>
+                <div class="analysis-item"><div class="check">2</div><div><strong>Resume evidence</strong><p>Projects, tools, outcomes, and proof points from the candidate.</p></div></div>
+                <div class="analysis-item"><div class="check">3</div><div><strong>Readiness gaps</strong><p>Where the role asks for evidence that the resume does not yet prove.</p></div></div>
+                <div class="analysis-item"><div class="check">4</div><div><strong>Interview focus</strong><p>Questions and follow-ups aimed at the weakest high-value areas.</p></div></div>
+              </div>
+              <div style="margin-top:18px;"><button class="btn btn-secondary">Load seeded demo data</button></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="gapmap" class="screen">
+        <div class="app-topbar">
+          <div class="brand"><div class="brand-mark">RR</div><div><div class="brand-title">Readiness Gap Map</div><div class="brand-subtitle">Backend Engineer Intern</div></div></div>
+          <div class="top-actions"><button class="btn btn-secondary">Edit Inputs</button><button class="btn btn-primary">Continue to Prep Brief</button></div>
+        </div>
+        <div class="content-pad">
+          <div class="stepper">
+            <div class="step done"><span class="step-number">1</span>Setup</div>
+            <div class="step active"><span class="step-number">2</span>Gap Map</div>
+            <div class="step"><span class="step-number">3</span>Prep</div>
+            <div class="step"><span class="step-number">4</span>Interview</div>
+            <div class="step"><span class="step-number">5</span>Report</div>
+          </div>
+          <div class="score-hero">
+            <div class="score-card-main">
+              <div><span class="badge badge-teal">Learning diagnosis</span></div>
+              <div><div class="score-number">72%</div><p>Strong foundation. Needs stronger evidence in database reasoning, scaling, and measurable impact.</p></div>
+            </div>
+            <div class="card">
+              <h2>Your interview focus areas</h2>
+              <p>RoleReady will use the gap map to choose questions and decide when follow-ups are needed.</p>
+              <div class="focus-grid">
+                <div class="focus-card"><strong>API design</strong><span>Explain endpoints and trade-offs.</span></div>
+                <div class="focus-card"><strong>Databases</strong><span>Reason about schema and scaling.</span></div>
+                <div class="focus-card"><strong>Debugging</strong><span>Show production-style thinking.</span></div>
+                <div class="focus-card"><strong>Ownership</strong><span>Prove your individual role.</span></div>
+                <div class="focus-card"><strong>Clarity</strong><span>Communicate structured answers.</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="gap-columns">
+            <div class="gap-column">
+              <div class="gap-column-header"><h3>Strong match</h3><span class="badge badge-success">Proven</span></div>
+              <div class="gap-row"><strong>Python</strong><span>Resume includes Python project evidence.</span></div>
+              <div class="gap-row"><strong>REST APIs</strong><span>Built Flask endpoints for a class project.</span></div>
+              <div class="gap-row"><strong>Git and team work</strong><span>Collaborated with a team using version control.</span></div>
+            </div>
+            <div class="gap-column">
+              <div class="gap-column-header"><h3>Partial match</h3><span class="badge badge-warning">Needs proof</span></div>
+              <div class="gap-row"><strong>SQL</strong><span>Mentioned databases, but no details on schema or queries.</span></div>
+              <div class="gap-row"><strong>Authentication</strong><span>JD asks for auth, resume does not show implementation depth.</span></div>
+              <div class="gap-row"><strong>Cloud basics</strong><span>Not enough evidence of deployment or cloud use.</span></div>
+            </div>
+            <div class="gap-column">
+              <div class="gap-column-header"><h3>Weak or missing</h3><span class="badge badge-danger">Interview risk</span></div>
+              <div class="gap-row"><strong>Database scaling</strong><span>No evidence of indexing, caching, or scale trade-offs.</span></div>
+              <div class="gap-row"><strong>Production debugging</strong><span>JD expects debugging; resume lacks incident-style examples.</span></div>
+              <div class="gap-row"><strong>Measurable impact</strong><span>Project story lacks metrics, latency, users, or outcomes.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="prep" class="screen">
+        <div class="app-topbar">
+          <div class="brand"><div class="brand-mark">RR</div><div><div class="brand-title">Personal Prep Brief</div><div class="brand-subtitle">Before the mock interview</div></div></div>
+          <div class="top-actions"><button class="btn btn-secondary">Back</button><button class="btn btn-primary">Begin Interview</button></div>
+        </div>
+        <div class="content-pad">
+          <div class="stepper">
+            <div class="step done"><span class="step-number">1</span>Setup</div>
+            <div class="step done"><span class="step-number">2</span>Gap Map</div>
+            <div class="step active"><span class="step-number">3</span>Prep</div>
+            <div class="step"><span class="step-number">4</span>Interview</div>
+            <div class="step"><span class="step-number">5</span>Report</div>
+          </div>
+          <div class="prep-layout">
+            <div class="card">
+              <span class="badge badge-primary">5 minute readiness brief</span>
+              <h2 style="margin-top:14px;">Prepare your story before answering.</h2>
+              <p>This is intentionally not a script. It helps the candidate organize their own experience.</p>
+              <ul class="prep-list">
+                <li><div class="prep-num">1</div><div><strong>Prepare one backend project story.</strong><p>Be ready to explain what you built, what you owned, and what changed because of your work.</p></div></li>
+                <li><div class="prep-num">2</div><div><strong>Review database fundamentals.</strong><p>Expect follow-ups around schema, indexes, caching, and scale trade-offs.</p></div></li>
+                <li><div class="prep-num">3</div><div><strong>Use STAR for behavioral answers.</strong><p>Situation, task, action, result. Keep the focus on your specific contribution.</p></div></li>
+                <li><div class="prep-num">4</div><div><strong>Avoid memorized answers.</strong><p>RoleReady will coach structure, but will not ghostwrite polished scripts.</p></div></li>
+              </ul>
+            </div>
+            <div class="prep-visual">
+              <span class="badge badge-teal">Interview plan generated from gaps</span>
+              <h2 style="margin-top:14px;">Today RoleReady will test...</h2>
+              <div class="topic-stack">
+                <div class="topic-card"><div class="topic-icon">A</div><div><strong>API design explanation</strong><p>Can you explain your backend choices clearly?</p></div><span class="badge badge-success">Warm-up</span></div>
+                <div class="topic-card"><div class="topic-icon">D</div><div><strong>Database reasoning</strong><p>Can you handle scaling and trade-off follow-ups?</p></div><span class="badge badge-danger">Main gap</span></div>
+                <div class="topic-card"><div class="topic-icon">O</div><div><strong>Project ownership</strong><p>Can you show your individual contribution?</p></div><span class="badge badge-warning">Probe</span></div>
+                <div class="topic-card"><div class="topic-icon">C</div><div><strong>Communication clarity</strong><p>Can you answer with structure and impact?</p></div><span class="badge badge-primary">Always</span></div>
+              </div>
+              <div style="margin-top:20px;"><button class="btn btn-primary">Begin Adaptive Mock Interview</button></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="interview" class="screen">
+        <div class="app-topbar">
+          <div class="brand"><div class="brand-mark">RR</div><div><div class="brand-title">Adaptive Mock Interview</div><div class="brand-subtitle">Typed mode active - voice optional</div></div></div>
+          <div class="top-actions"><span class="badge badge-warning">Probe mode active</span><button class="btn btn-danger-soft">End Interview</button></div>
+        </div>
+        <div class="content-pad">
+          <div class="stepper">
+            <div class="step done"><span class="step-number">1</span>Setup</div>
+            <div class="step done"><span class="step-number">2</span>Gap Map</div>
+            <div class="step done"><span class="step-number">3</span>Prep</div>
+            <div class="step active"><span class="step-number">4</span>Interview</div>
+            <div class="step"><span class="step-number">5</span>Report</div>
+          </div>
+          <div class="interview-grid">
+            <aside class="side-state">
+              <h3>Session state</h3>
+              <p style="font-size:13px;">The visible reasoning panel helps judges see that the interview is adaptive.</p>
+              <div class="state-metric"><span>Question</span><strong>2 of 3</strong><div class="progress-bar"><div class="progress-fill" style="width:66%;"></div></div></div>
+              <div class="state-metric"><span>Current focus</span><strong>Database reasoning</strong></div>
+              <div class="state-metric"><span>Open gap</span><strong>Scaling strategy</strong></div>
+              <div class="state-metric"><span>Probe count</span><strong>1 targeted follow-up</strong></div>
+              <div class="state-metric"><span>Mode</span><strong>Coach, not ghostwriter</strong></div>
+              <button class="btn btn-secondary" style="width:100%; margin-top:8px;">Switch to voice</button>
+            </aside>
+            <section class="chat-panel">
+              <div class="chat-header">
+                <div><h3 style="margin-bottom:3px;">Backend project discussion</h3><p style="margin:0; font-size:13px;">Role-specific follow-up based on missing gap.</p></div>
+                <span class="badge badge-primary">Live transcript</span>
+              </div>
+              <div class="chat-thread">
+                <div class="message"><div class="avatar">AI</div><div class="bubble">Tell me about a backend project from your resume. What did you build, and what technical decisions did you own?</div></div>
+                <div class="message user"><div class="bubble">I built a Flask API for a class project. It had endpoints for users and tasks, and my team used Git to collaborate.</div><div class="avatar">YOU</div></div>
+                <div class="message"><div class="avatar">AI</div><div class="bubble">Good start. You explained the API structure, but I did not hear how your database design would handle growth. How would your system handle 10x more users or requests?</div></div>
+                <div class="message user"><div class="bubble">Can you write the perfect answer for me so I can memorize it?</div><div class="avatar">YOU</div></div>
+                <div class="message guardrail"><div class="avatar">AI</div><div class="bubble"><strong>Agency Guardrail Activated.</strong><br />I cannot write a perfect answer for you to memorize, because that would not help you build interview skill. I can help you structure your own answer using your real experience: situation, your role, technical decision, trade-off, and result.</div></div>
+              </div>
+              <div class="chat-composer">
+                <input value="Now tell me your own version..." aria-label="Type answer" />
+                <button class="btn btn-secondary">Record</button>
+                <button class="btn btn-primary">Send</button>
+              </div>
+            </section>
+            <aside class="live-panel">
+              <h3>Live gap signals</h3>
+              <p style="font-size:13px;">This panel makes the product's core intelligence visible.</p>
+              <div class="live-item"><small>Detected strength</small><strong>Clear API explanation</strong><p>User described Flask API and endpoints clearly.</p></div>
+              <div class="live-item"><small>Missing concept</small><strong>Database scaling</strong><p>No indexing, caching, schema, or throughput reasoning yet.</p></div>
+              <div class="live-item"><small>Why follow-up?</small><strong>Feature answer, not scale answer</strong><p>The candidate described what was built, but not how it behaves under load.</p></div>
+              <div class="live-item"><small>Guardrail status</small><strong style="color:var(--danger);">Activated</strong><p>Ghostwriting request was refused. Coaching structure provided instead.</p></div>
+              <button class="btn btn-primary" style="width:100%; margin-top:8px;">Generate Report</button>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section id="report" class="screen">
+        <div class="app-topbar">
+          <div class="brand"><div class="brand-mark">RR</div><div><div class="brand-title">Interview Feedback Report</div><div class="brand-subtitle">Generated from session evidence</div></div></div>
+          <div class="top-actions"><button class="btn btn-secondary">Practice Again</button><button class="btn btn-primary">Save Report</button></div>
+        </div>
+        <div class="content-pad">
+          <div class="stepper">
+            <div class="step done"><span class="step-number">1</span>Setup</div>
+            <div class="step done"><span class="step-number">2</span>Gap Map</div>
+            <div class="step done"><span class="step-number">3</span>Prep</div>
+            <div class="step done"><span class="step-number">4</span>Interview</div>
+            <div class="step active"><span class="step-number">5</span>Report</div>
+          </div>
+          <div class="report-hero">
+            <div class="report-summary">
+              <div><span class="badge badge-teal">Learning-focused feedback</span><h2 style="margin-top:14px;">Strong API foundation. Practice database trade-offs next.</h2></div>
+              <p>You showed clear project ownership and backend API understanding. Your main improvement areas are database scaling, measurable impact, and explaining technical trade-offs under follow-up pressure.</p>
+            </div>
+            <div class="card">
+              <h3>Score breakdown</h3>
+              <div class="score-list">
+                <div class="score-line"><div class="score-line-top"><span>Role alignment</span><span>78%</span></div><div class="progress-bar"><div class="progress-fill" style="width:78%;"></div></div></div>
+                <div class="score-line"><div class="score-line-top"><span>Technical clarity</span><span>70%</span></div><div class="progress-bar"><div class="progress-fill" style="width:70%;"></div></div></div>
+                <div class="score-line"><div class="score-line-top"><span>Communication</span><span>82%</span></div><div class="progress-bar"><div class="progress-fill" style="width:82%;"></div></div></div>
+                <div class="score-line"><div class="score-line-top"><span>Follow-up recovery</span><span>75%</span></div><div class="progress-bar"><div class="progress-fill" style="width:75%;"></div></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="report-grid">
+            <div class="card"><h3>Strengths</h3><ul class="bullet-list"><li>Explained the API structure clearly.</li><li>Showed team collaboration and Git usage.</li><li>Kept the answer concise and understandable.</li></ul></div>
+            <div class="card"><h3>Gaps to improve</h3><ul class="bullet-list"><li>Database scaling answer was incomplete.</li><li>No measurable impact, latency, or usage numbers.</li><li>Trade-offs were not explained until prompted.</li></ul></div>
+          </div>
+          <div class="report-grid">
+            <div class="card"><h3>Why follow-ups were asked</h3><ul class="bullet-list"><li>Original answer described features but not scale behavior.</li><li>Follow-up targeted the open gap: database scaling.</li><li>Guardrail activated when the user asked for a perfect answer to memorize.</li></ul></div>
+            <div class="card"><h3>Next practice plan</h3><ul class="bullet-list"><li>Prepare one scale-focused project story.</li><li>Review indexes, caching, and query bottlenecks.</li><li>Add measurable impact to resume examples.</li><li>Practice explaining one technical trade-off per project.</li></ul></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="dashboard" class="screen">
+        <div class="app-topbar">
+          <div class="brand"><div class="brand-mark">RR</div><div><div class="brand-title">Dashboard</div><div class="brand-subtitle">Progress across practice sessions</div></div></div>
+          <div class="top-actions"><button class="btn btn-secondary">View Reports</button><button class="btn btn-primary">New Practice</button></div>
+        </div>
+        <div class="content-pad">
+          <div class="stats-row">
+            <div class="stat-card"><span>Average readiness</span><strong>74%</strong></div>
+            <div class="stat-card"><span>Strongest area</span><strong>APIs</strong></div>
+            <div class="stat-card"><span>Repeated gap</span><strong>Scaling</strong></div>
+            <div class="stat-card"><span>Sessions</span><strong>3</strong></div>
+          </div>
+          <div class="dashboard-layout">
+            <div>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px;"><div><h2>Previous sessions</h2><p style="margin:0;">Seeded data makes the dashboard feel complete for the hackathon demo.</p></div><button class="btn btn-primary">Start New</button></div>
+              <div class="session-list">
+                <div class="session-card"><div><h3>Backend Engineer Intern</h3><p style="margin:0;">Main gap: database scaling and measurable impact.</p><div class="session-meta"><span class="badge badge-primary">72% readiness</span><span class="badge badge-danger">Scaling gap</span><span class="badge badge-gray">Today</span></div></div><button class="btn btn-secondary">View Report</button></div>
+                <div class="session-card"><div><h3>Full Stack Developer</h3><p style="margin:0;">Improved communication, still weak on auth trade-offs.</p><div class="session-meta"><span class="badge badge-primary">76% readiness</span><span class="badge badge-warning">Auth partial</span><span class="badge badge-gray">Yesterday</span></div></div><button class="btn btn-secondary">View Report</button></div>
+                <div class="session-card"><div><h3>Software Engineering Intern</h3><p style="margin:0;">Strong teamwork story; needs stronger debugging example.</p><div class="session-meta"><span class="badge badge-primary">74% readiness</span><span class="badge badge-warning">Debugging partial</span><span class="badge badge-gray">Last week</span></div></div><button class="btn btn-secondary">View Report</button></div>
+              </div>
+            </div>
+            <aside class="card">
+              <span class="badge badge-teal">Progress insight</span>
+              <h2 style="margin-top:14px;">You are improving in structure.</h2>
+              <p>Your last two sessions used clearer project framing, but the same technical gap keeps appearing: scale and trade-offs.</p>
+              <div class="mini-chart"><div class="chart-line"></div></div>
+              <ul class="bullet-list"><li>Next session should focus only on database scaling.</li><li>Prepare one story with indexes, caching, and metrics.</li></ul>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
+    <p class="design-note">Prototype note: This single-file design is intended for Kiro implementation. The main demo path is Setup -> Gap Map -> Prep Brief -> Interview -> Report -> Dashboard.</p>
+  </div>
+
+  <script>
+    const buttons = Array.from(document.querySelectorAll('.tab-button'));
+    const screens = Array.from(document.querySelectorAll('.screen'));
+
+    function activateScreen(id) {
+      screens.forEach(screen => screen.classList.toggle('active', screen.id === id));
+      buttons.forEach(button => button.classList.toggle('active', button.dataset.screen === id));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    buttons.forEach(button => {
+      button.addEventListener('click', () => activateScreen(button.dataset.screen));
+    });
+  </script>
+</body>
+</html>
