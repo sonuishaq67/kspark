@@ -40,40 +40,44 @@ export default function InterviewPage() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100vh-8rem)] gap-4">
+      <div className="flex h-[calc(100vh-8rem)] min-h-[38rem] flex-col gap-4">
         {currentQuestion && (
-          <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4">
-            <p className="text-xs text-indigo-400 uppercase tracking-wider mb-2">{currentQuestion.topic}</p>
-            <p className="text-gray-100 font-medium">{currentQuestion.text}</p>
+          <div className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-5 shadow-sm">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
+              {currentQuestion.topic}
+            </p>
+            <p className="font-medium leading-7 text-[#17211b]">{currentQuestion.text}</p>
           </div>
         )}
 
-        <div className="flex items-center gap-3 text-xs text-gray-500">
-          <span className={`w-2 h-2 rounded-full ${socket.isConnected ? "bg-green-500" : "bg-gray-600"}`} />
+        <div className="flex items-center gap-3 text-xs font-medium text-[#667169]">
+          <span className={`h-2 w-2 rounded-full ${socket.isConnected ? "bg-emerald-600" : "bg-[#8b948e]"}`} />
           <span>{socket.isConnected ? "Connected" : "Connecting..."}</span>
-          {socket.isThinking && <span className="text-yellow-400 animate-pulse">● Thinking...</span>}
-          {socket.isSpeaking && <span className="text-indigo-400 animate-pulse">● Speaking</span>}
+          {socket.isThinking && <span className="animate-pulse text-amber-700">Thinking...</span>}
+          {socket.isSpeaking && <span className="animate-pulse text-emerald-700">Speaking</span>}
         </div>
 
         {/* Transcript */}
-        <div className="flex-1 overflow-y-auto bg-gray-900/50 border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto rounded-lg border border-[#17211b]/10 bg-[#f7f5ef] p-4">
           {socket.conversation.map((t, i) => (
             <div key={i} className={`flex ${t.speaker === "candidate" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                t.speaker === "candidate" ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-100"
+              <div className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm leading-6 shadow-sm ${
+                t.speaker === "candidate"
+                  ? "rounded-br-sm bg-[#17211b] text-white"
+                  : "rounded-bl-sm border border-[#17211b]/10 bg-white text-[#17211b]"
               }`}>{t.text}</div>
             </div>
           ))}
           {socket.streamingText && (
             <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-2xl bg-gray-800 px-4 py-2.5 text-sm text-gray-100">
-                {socket.streamingText}<span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-indigo-400" />
+              <div className="max-w-[80%] rounded-lg rounded-bl-sm border border-[#17211b]/10 bg-white px-4 py-2.5 text-sm leading-6 text-[#17211b] shadow-sm">
+                {socket.streamingText}<span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-[#17211b]" />
               </div>
             </div>
           )}
           {mic.liveText && (
             <div className="flex justify-end">
-              <div className="max-w-[80%] rounded-2xl bg-indigo-500/50 px-4 py-2.5 text-sm text-indigo-100 italic">
+              <div className="max-w-[80%] rounded-lg rounded-br-sm border border-[#17211b]/15 bg-[#e7efe9] px-4 py-2.5 text-sm italic text-[#17211b]">
                 {mic.liveText}
               </div>
             </div>
@@ -84,8 +88,8 @@ export default function InterviewPage() {
           <button
             onClick={mic.isRecording ? mic.stopRecording : mic.startRecording}
             disabled={socket.isThinking || socket.isSpeaking}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 ${
-              mic.isRecording ? "bg-red-600 text-white" : "bg-indigo-600 text-white hover:bg-indigo-700"
+            className={`flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition disabled:opacity-40 ${
+              mic.isRecording ? "bg-rose-700 text-white hover:bg-rose-800" : "bg-[#17211b] text-white hover:bg-[#2b3a31]"
             }`}
           >
             {mic.isRecording ? "Stop" : "Speak"}
@@ -93,7 +97,7 @@ export default function InterviewPage() {
           <button
             onClick={handleEndSession}
             disabled={ending}
-            className="text-sm text-gray-400 hover:text-red-400 transition-colors border border-gray-700 px-4 py-2 rounded-lg"
+            className="rounded-lg border border-[#17211b]/15 bg-white px-4 py-2 text-sm font-semibold text-[#536058] transition hover:border-rose-300 hover:text-rose-700"
           >
             {ending ? "Ending..." : "End Session"}
           </button>

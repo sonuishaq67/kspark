@@ -1,4 +1,4 @@
-.PHONY: help setup dev up down build logs test clean backend web ai-core
+.PHONY: help setup dev up down build logs test test-e2e clean backend web ai-core install-hooks backend-watch
 
 help:
 	@echo "RoleReady AI — Hackathon Stack"
@@ -20,6 +20,9 @@ help:
 	@echo ""
 	@echo "Testing & Cleanup:"
 	@echo "  make test       - Run backend unit tests"
+	@echo "  make test-e2e   - Run backend demo smoke test"
+	@echo "  make backend-watch - Watch backend saves and run pylint + pytest"
+	@echo "  make install-hooks - Install repo-managed git hooks"
 	@echo "  make clean      - Remove containers, volumes, SQLite file"
 	@echo ""
 	@echo "Options:"
@@ -95,6 +98,23 @@ test:
 		exit 1; \
 	fi
 	cd backend && conda run -n roleready pytest tests/ -v
+
+test-e2e:
+	@if ! conda env list | grep -q "^roleready "; then \
+		echo "Error: conda environment 'roleready' not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
+	cd backend && conda run -n roleready pytest tests/test_demo_e2e.py -v
+
+backend-watch:
+	@if ! conda env list | grep -q "^roleready "; then \
+		echo "Error: conda environment 'roleready' not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
+	conda run -n roleready --no-capture-output python scripts/backend_on_save.py
+
+install-hooks:
+	bash scripts/install_git_hooks.sh
 
 # ── Cleanup ──────────────────────────────────────────────────────────────────
 

@@ -10,8 +10,8 @@ export default function GhostwritingGuardrailBadge({
   if (activationCount === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-amber-700/40 bg-amber-950/30 px-3 py-2">
-      <span className="text-amber-400" aria-hidden="true">
+    <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+      <span className="text-amber-700" aria-hidden="true">
         <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
           <path
             fillRule="evenodd"
@@ -20,8 +20,8 @@ export default function GhostwritingGuardrailBadge({
           />
         </svg>
       </span>
-      <p className="text-xs font-semibold text-amber-300">
-        Guardrail active — {activationCount} ghostwriting{" "}
+      <p className="text-xs font-semibold text-amber-900">
+        Guardrail active: {activationCount} ghostwriting{" "}
         {activationCount === 1 ? "attempt" : "attempts"} blocked
       </p>
     </div>

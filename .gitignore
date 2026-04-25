@@ -44,6 +44,10 @@ env/
 
 # IDEs
 .vscode/
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
 .idea/
 *.swp
 *.swo
@@ -75,6 +79,7 @@ environment-full.yml  # Exported full environment (optional)
 # Logs
 *.log
 logs/
+.logs/
 
 # Test coverage
 .coverage

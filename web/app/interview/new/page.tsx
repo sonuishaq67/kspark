@@ -62,77 +62,86 @@ export default function NewInterviewPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-100 mb-2">New Interview</h1>
-        <p className="text-gray-400 text-sm mb-8">
-          3 questions — behavioral, technical, system design. The AI probes your gaps.
-        </p>
+      <div className="mx-auto max-w-4xl space-y-8">
+        <div>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-[#17211b]/15 bg-white/55 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#536058]">
+            <span className="h-2 w-2 rounded-full bg-emerald-600" />
+            Quick interview
+          </div>
+          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-[#17211b] md:text-5xl">
+            Start a focused three-question interview.
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-[#536058]">
+            Choose the interviewer tone and practice mode. The session covers behavioral,
+            technical, and system design prompts with adaptive follow-ups.
+          </p>
+        </div>
 
-        {/* Mode selection */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+        <section className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-5 shadow-sm">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
             Mode
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {MODES.map((mode) => (
               <button
                 key={mode.id}
                 onClick={() => setSelectedMode(mode.id)}
                 className={`
-                  relative text-left p-4 rounded-xl border transition-all
+                  relative rounded-lg border p-4 text-left transition
                   ${
                     selectedMode === mode.id
-                      ? "border-indigo-500 bg-indigo-950/40"
-                      : "border-gray-700 bg-gray-800/40 hover:border-gray-600"
+                      ? "border-[#17211b] bg-[#e7efe9]"
+                      : "border-[#17211b]/10 bg-white hover:border-[#17211b]/25"
                   }
                 `}
               >
                 {mode.recommended && (
-                  <span className="absolute top-2 right-2 text-xs bg-indigo-600 text-white px-1.5 py-0.5 rounded-full">
+                  <span className="absolute right-3 top-3 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-800">
                     Default
                   </span>
                 )}
-                <p className="font-semibold text-gray-100 text-sm mb-1">{mode.label}</p>
-                <p className="text-xs text-gray-400 leading-relaxed">{mode.description}</p>
+                <p className="mb-1 text-sm font-semibold text-[#17211b]">{mode.label}</p>
+                <p className="max-w-sm text-xs leading-5 text-[#536058]">{mode.description}</p>
               </button>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Persona selection */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+        <section className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-5 shadow-sm">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
             Interviewer Persona
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             {PERSONAS.map((persona) => (
               <button
                 key={persona.id}
                 onClick={() => setSelectedPersona(persona.id)}
                 className={`
-                  relative text-left p-4 rounded-xl border transition-all
+                  relative rounded-lg border p-4 text-left transition
                   ${
                     selectedPersona === persona.id
-                      ? "border-indigo-500 bg-indigo-950/40"
-                      : "border-gray-700 bg-gray-800/40 hover:border-gray-600"
+                      ? "border-[#17211b] bg-[#e7efe9]"
+                      : "border-[#17211b]/10 bg-white hover:border-[#17211b]/25"
                   }
                 `}
               >
                 {persona.recommended && (
-                  <span className="absolute top-2 right-2 text-xs bg-indigo-600 text-white px-1.5 py-0.5 rounded-full">
+                  <span className="absolute right-3 top-3 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-800">
                     Default
                   </span>
                 )}
-                <span className="text-2xl mb-2 block">{persona.icon}</span>
-                <p className="font-semibold text-gray-100 text-sm mb-1">{persona.label}</p>
-                <p className="text-xs text-gray-400 leading-relaxed">{persona.description}</p>
+                <span className="mb-2 grid h-9 w-9 place-items-center rounded-lg bg-[#f4f1ea] text-xl">
+                  {persona.icon}
+                </span>
+                <p className="mb-1 text-sm font-semibold text-[#17211b]">{persona.label}</p>
+                <p className="text-xs leading-5 text-[#536058]">{persona.description}</p>
               </button>
             ))}
           </div>
-        </div>
+        </section>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-900/30 border border-red-700/50 rounded-lg text-red-400 text-sm">
+          <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
             {error}
           </div>
         )}
@@ -140,7 +149,7 @@ export default function NewInterviewPage() {
         <button
           onClick={handleStart}
           disabled={loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors text-base"
+          className="w-full rounded-lg bg-[#17211b] py-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2b3a31] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Starting..." : "Start Interview"}
         </button>

@@ -45,12 +45,18 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-3xl">
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="mb-6 flex items-start justify-between gap-5">
           <div>
-            <h1 className="text-2xl font-bold text-gray-100">Session Report</h1>
-            <p className="text-gray-400 text-sm mt-1">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-[#17211b]/15 bg-white/55 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#536058]">
+              <span className="h-2 w-2 rounded-full bg-emerald-600" />
+              Session report
+            </div>
+            <h1 className="text-4xl font-semibold tracking-tight text-[#17211b] md:text-5xl">
+              Interview feedback
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-[#536058]">
               {formatDate(report.started_at)}
               {duration && ` · ${duration}`}
               {" · "}
@@ -61,9 +67,9 @@ export default async function ReportPage({ params }: ReportPageProps) {
           </div>
           <Link
             href="/dashboard"
-            className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+            className="shrink-0 rounded-lg border border-[#17211b]/15 bg-white px-4 py-2 text-sm font-semibold text-[#536058] transition hover:text-[#17211b]"
           >
-            ← Dashboard
+            Dashboard
           </Link>
         </div>
 
@@ -73,8 +79,8 @@ export default async function ReportPage({ params }: ReportPageProps) {
             <TLDRCard tldr={report.tldr} />
           </div>
         ) : (
-          <div className="mb-6 p-4 bg-gray-800/40 border border-gray-700 rounded-xl">
-            <p className="text-gray-400 text-sm italic">
+          <div className="mb-6 rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-4 shadow-sm">
+            <p className="text-sm italic text-[#667169]">
               Summary not yet generated. End the session to generate feedback.
             </p>
           </div>
@@ -83,7 +89,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
         {/* Question breakdown */}
         {report.thread_summary && report.thread_summary.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
               Question Breakdown
             </h2>
             <QuestionBreakdown threadSummary={report.thread_summary} />
@@ -94,13 +100,13 @@ export default async function ReportPage({ params }: ReportPageProps) {
         <div className="flex gap-3">
           <Link
             href="/interview/new"
-            className="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors"
+            className="flex-1 rounded-lg bg-[#17211b] px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#2b3a31]"
           >
             Start New Session
           </Link>
           <Link
             href="/dashboard"
-            className="flex-1 text-center bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold px-5 py-3 rounded-xl transition-colors border border-gray-700"
+            className="flex-1 rounded-lg border border-[#17211b]/15 bg-white px-5 py-3 text-center text-sm font-semibold text-[#536058] transition hover:text-[#17211b]"
           >
             Back to Dashboard
           </Link>

@@ -24,7 +24,7 @@ export default function TranscriptPanel({
   return (
     <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
       {conversation.length === 0 && !liveTranscript && (
-        <p className="text-gray-500 text-sm italic text-center mt-8">
+        <p className="mt-8 text-center text-sm italic text-[#667169]">
           The conversation will appear here once you start speaking.
         </p>
       )}
@@ -36,16 +36,18 @@ export default function TranscriptPanel({
         >
           <div
             className={`
-              max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed
+              max-w-[80%] rounded-lg px-4 py-2.5 text-sm leading-relaxed
               ${
                 turn.speaker === "candidate"
-                  ? "bg-indigo-600 text-white rounded-br-sm"
-                  : "bg-gray-800 text-gray-100 rounded-bl-sm"
+                  ? "rounded-br-sm bg-[#17211b] text-white"
+                  : "rounded-bl-sm border border-[#17211b]/10 bg-white text-[#17211b]"
               }
             `}
           >
             {turn.speaker === "agent" && (
-              <p className="text-xs text-gray-400 mb-1 font-medium">Interviewer</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
+                Interviewer
+              </p>
             )}
             <p className="whitespace-pre-wrap">{turn.text}</p>
           </div>
@@ -55,7 +57,7 @@ export default function TranscriptPanel({
       {/* Live transcript (current candidate turn) */}
       {liveTranscript && (
         <div className="flex justify-end">
-          <div className="max-w-[80%] rounded-2xl rounded-br-sm px-4 py-2.5 text-sm bg-indigo-500/50 text-indigo-100 border border-indigo-500/30">
+          <div className="max-w-[80%] rounded-lg rounded-br-sm border border-[#17211b]/15 bg-[#e7efe9] px-4 py-2.5 text-sm text-[#17211b]">
             <p className="whitespace-pre-wrap">{liveTranscript}</p>
           </div>
         </div>
@@ -64,11 +66,11 @@ export default function TranscriptPanel({
       {/* Thinking indicator */}
       {isThinking && (
         <div className="flex justify-start">
-          <div className="bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3">
+          <div className="rounded-lg rounded-bl-sm border border-[#17211b]/10 bg-white px-4 py-3">
             <div className="flex gap-1 items-center">
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-[#667169] [animation-delay:-0.3s]" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-[#667169] [animation-delay:-0.15s]" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-[#667169]" />
             </div>
           </div>
         </div>

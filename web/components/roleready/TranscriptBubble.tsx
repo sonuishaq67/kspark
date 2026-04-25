@@ -11,23 +11,23 @@ export default function TranscriptBubble({ turn }: TranscriptBubbleProps) {
     <div className={`flex ${isCandidate ? "justify-end" : "justify-start"}`}>
       <div
         className={`
-          max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed
+          max-w-[82%] rounded-lg px-4 py-3 text-sm leading-relaxed shadow-sm
           ${
             isCandidate
-              ? "bg-indigo-600 text-white rounded-br-sm"
-              : "bg-gray-800 text-gray-100 rounded-bl-sm border border-gray-700/50"
+              ? "rounded-br-sm bg-[#17211b] text-white"
+              : "rounded-bl-sm border border-[#17211b]/10 bg-white text-[#17211b]"
           }
         `}
       >
         {!isCandidate && (
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-300">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
             Interviewer
           </p>
         )}
         <p className="whitespace-pre-wrap">{turn.text}</p>
         {turn.guardrail && (
-          <p className="mt-2 text-xs text-amber-300 font-medium">
-            ⚠ Coaching mode — answer in your own words
+          <p className="mt-2 text-xs font-medium text-amber-700">
+            Coaching mode: answer in your own words
           </p>
         )}
       </div>

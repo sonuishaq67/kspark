@@ -200,7 +200,19 @@ make up         # docker-compose up --build
 make down       # docker-compose down
 make logs       # Tail container logs
 make test       # Run pytest
+make test-e2e   # Run the demo smoke test used by pre-commit
+make install-hooks  # Install repo-managed git hooks
+make backend-watch  # Watch backend saves and run pylint + pytest
 ```
+
+## Dev Guardrails
+
+We now keep the demo path protected in two places:
+
+- `make install-hooks` installs `.githooks/pre-commit`, which runs `make test-e2e` before every commit.
+- Opening the repo in VS Code auto-starts `make backend-watch`, which watches `backend/**/*.py` and runs `pylint` on the changed files plus `pytest backend/tests` after each save.
+
+These checks assume the shared `roleready` conda environment is installed with `make setup`.
 
 ### Local (no Docker)
 
