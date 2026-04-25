@@ -108,7 +108,7 @@ Add a database-backed cache layer for Tavily research results using the existing
     - Use in-memory SQLite (`:memory:`) via a fixture that patches `get_db()`
     - _Requirements: 2.3, 6.1, 6.2, 6.3_
 
-- [-] 7. Final checkpoint — Ensure all tests pass
+- [x] 7. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
   - Verify backward compatibility: `research_company()` signature and return type unchanged
   - Verify cache operations are transparent to callers
