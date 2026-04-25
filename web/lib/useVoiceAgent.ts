@@ -36,6 +36,9 @@ export interface VoiceAgentState {
   currentPhase: string | null;
   isSessionComplete: boolean;
   error: string | null;
+  gaps: import("./types").GapTrackingItem[];
+  currentGap: string | null;
+  guardrailCount: number;
   start: () => Promise<void>;
   stop: () => void;
 }
@@ -51,6 +54,9 @@ export function useVoiceAgent(sessionId: string): VoiceAgentState {
   const [currentPhase, setCurrentPhase] = useState<string | null>(null);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gaps, setGaps] = useState<import("./types").GapTrackingItem[]>([]);
+  const [currentGap, setCurrentGap] = useState<string | null>(null);
+  const [guardrailCount, setGuardrailCount] = useState(0);
 
   // Refs for non-blocking updates
   const statusRef = useRef<AgentStatus>("idle");
@@ -265,7 +271,10 @@ export function useVoiceAgent(sessionId: string): VoiceAgentState {
       const res = await api.aiCore.textTurn(sessionId, text.trim());
       setLatestAgentText(res.interviewer_response);
       setGuardrailActivated(res.guardrail_activated);
+      if (res.guardrail_activated) setGuardrailCount((c) => c + 1);
       if (res.current_phase) setCurrentPhase(res.current_phase);
+      if (res.gaps && res.gaps.length > 0) setGaps(res.gaps);
+      if (res.gap_addressed) setCurrentGap(res.gap_addressed);
       if (res.is_session_complete) {
         setIsSessionComplete(true);
         setStatus("idle");
@@ -389,6 +398,9 @@ export function useVoiceAgent(sessionId: string): VoiceAgentState {
     currentPhase,
     isSessionComplete,
     error,
+    gaps,
+    currentGap,
+    guardrailCount,
     start,
     stop,
   };

@@ -80,6 +80,16 @@ export interface AICoreTextTurnResponse {
   guardrail_activated: boolean;
   current_phase: string | null;
   is_session_complete: boolean;
+  gaps: GapTrackingItem[];
+  gap_addressed: string | null;
+  gap_status_change: string | null;
+}
+
+export interface GapTrackingItem {
+  label: string;
+  category: "strong" | "partial" | "missing";
+  status: "open" | "improved" | "closed";
+  evidence: string | null;
 }
 
 export interface AICoreReport {

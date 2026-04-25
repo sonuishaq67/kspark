@@ -106,6 +106,9 @@ async def start_session(
 
     store_session(session)
 
+    # Parse gaps from context if available (from readiness analysis)
+    _init_gap_tracking(session, ctx)
+
     # Generate opening message
     intro = await _generate_intro(session, ctx)
 
@@ -126,10 +129,10 @@ async def start_session(
 async def process_turn(
     session_id: str,
     final_transcript: str,
-) -> tuple[str, bool]:
+) -> dict:
     """
     Process one complete candidate turn (text mode).
-    Returns (interviewer_response, guardrail_activated).
+    Returns dict with response, guardrail, phase, gaps, completion status.
     """
     session = get_session(session_id)
     if not session:
@@ -144,6 +147,8 @@ async def process_turn(
     )
 
     guardrail_activated = is_ghostwriting_attempt(final_transcript)
+    if guardrail_activated:
+        session.guardrail_activations += 1
 
     # Generate candidate questions synchronously in text mode
     from app.agents.question_generator import generate_candidate_questions
@@ -162,6 +167,9 @@ async def process_turn(
         final_transcript=final_transcript,
     )
 
+    # Update gap tracking based on what the candidate said
+    gap_update = _update_gap_tracking(session, final_transcript)
+
     # Update memory
     phase_name = session.current_phase.name if session.current_phase else "UNKNOWN"
     add_turn(session, TurnRecord(
@@ -175,7 +183,15 @@ async def process_turn(
         phase=phase_name,
     ))
 
-    return response, guardrail_activated
+    return {
+        "interviewer_response": response,
+        "guardrail_activated": guardrail_activated,
+        "current_phase": session.current_phase.name if session.current_phase else None,
+        "is_session_complete": session.is_complete,
+        "gaps": _get_gap_snapshot(session),
+        "gap_addressed": gap_update.get("gap_addressed"),
+        "gap_status_change": gap_update.get("status_change"),
+    }
 
 
 async def process_turn_stream(
@@ -356,3 +372,108 @@ async def _prepare_followup(
 
     await generate_candidate_questions(session, ctx, transcript)
     return await select_best_followup(session, transcript)
+
+
+def _init_gap_tracking(session: InterviewSession, ctx: CandidateContext) -> None:
+    """Initialize gap tracking from context (readiness analysis data)."""
+    # Parse gaps from risk_areas and role_expectations in context
+    gaps = []
+
+    for area in ctx.risk_areas:
+        gaps.append({
+            "label": area,
+            "category": "missing",
+            "evidence": None,
+            "status": "open",
+        })
+
+    for topic in ctx.likely_topics[:5]:
+        if not any(g["label"].lower() == topic.lower() for g in gaps):
+            gaps.append({
+                "label": topic,
+                "category": "partial",
+                "evidence": None,
+                "status": "open",
+            })
+
+    for highlight in ctx.resume_highlights[:3]:
+        gaps.append({
+            "label": highlight,
+            "category": "strong",
+            "evidence": "Listed on resume",
+            "status": "open",
+        })
+
+    session.gap_context = gaps
+    session.open_gaps = [g["label"] for g in gaps if g["category"] in ("missing", "partial")]
+
+    logger.info(
+        "Gap tracking initialized: session=%s total=%d open=%d",
+        session.session_id, len(gaps), len(session.open_gaps),
+    )
+
+
+def _update_gap_tracking(session: InterviewSession, transcript: str) -> dict:
+    """
+    Check if the candidate's answer addresses any open gaps.
+    Uses fuzzy substring matching.
+    Returns {"gap_addressed": str|None, "status_change": str|None}.
+    """
+    if not session.gap_context or not transcript:
+        return {"gap_addressed": None, "status_change": None}
+
+    transcript_lower = transcript.lower()
+    best_match = None
+    best_score = 0
+
+    for gap in session.gap_context:
+        if gap["status"] == "closed":
+            continue
+
+        label_lower = gap["label"].lower()
+        # Check if any significant words from the gap label appear in the transcript
+        words = [w for w in label_lower.split() if len(w) > 3]
+        if not words:
+            words = label_lower.split()
+
+        matches = sum(1 for w in words if w in transcript_lower)
+        score = matches / max(len(words), 1)
+
+        if score > best_score and score >= 0.4:
+            best_score = score
+            best_match = gap
+
+    if not best_match:
+        return {"gap_addressed": None, "status_change": None}
+
+    old_status = best_match["status"]
+    if old_status == "open":
+        best_match["status"] = "improved"
+        best_match["evidence"] = transcript[:200]
+    elif old_status == "improved":
+        best_match["status"] = "closed"
+        best_match["evidence"] = transcript[:200]
+        if best_match["label"] in session.open_gaps:
+            session.open_gaps.remove(best_match["label"])
+        if best_match["label"] not in session.closed_gaps:
+            session.closed_gaps.append(best_match["label"])
+
+    session.current_gap_being_tested = best_match["label"]
+
+    return {
+        "gap_addressed": best_match["label"],
+        "status_change": f"{old_status} → {best_match['status']}",
+    }
+
+
+def _get_gap_snapshot(session: InterviewSession) -> list[dict]:
+    """Return current gap state for the frontend."""
+    return [
+        {
+            "label": g["label"],
+            "category": g["category"],
+            "status": g["status"],
+            "evidence": g.get("evidence"),
+        }
+        for g in session.gap_context
+    ]

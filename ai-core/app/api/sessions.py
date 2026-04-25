@@ -63,6 +63,9 @@ class TextTurnResponse(BaseModel):
     guardrail_activated: bool
     current_phase: str | None
     is_session_complete: bool
+    gaps: list[dict] = []
+    gap_addressed: str | None = None
+    gap_status_change: str | None = None
 
 
 class AdvancePhaseResponse(BaseModel):
@@ -130,19 +133,17 @@ async def text_turn(session_id: str, body: TextTurnRequest):
     if not session:
         raise HTTPException(404, f"Session {session_id} not found")
 
-    response, guardrail = await process_turn(session_id, body.transcript)
-
-    # Re-fetch session state after processing
-    session = get_session(session_id)
-    current_phase = session.current_phase.name if session and session.current_phase else None
-    is_complete = session.is_complete if session else True
+    result = await process_turn(session_id, body.transcript)
 
     return TextTurnResponse(
         session_id=session_id,
-        interviewer_response=response,
-        guardrail_activated=guardrail,
-        current_phase=current_phase,
-        is_session_complete=is_complete,
+        interviewer_response=result["interviewer_response"],
+        guardrail_activated=result["guardrail_activated"],
+        current_phase=result["current_phase"],
+        is_session_complete=result["is_session_complete"],
+        gaps=result.get("gaps", []),
+        gap_addressed=result.get("gap_addressed"),
+        gap_status_change=result.get("gap_status_change"),
     )
 
 
@@ -198,3 +199,23 @@ async def session_status(session_id: str):
     if "error" in status:
         raise HTTPException(404, status["error"])
     return status
+
+
+@router.get("/{session_id}/gaps")
+async def session_gaps(session_id: str):
+    """Return current gap tracking state."""
+    from app.models.session import get_session as get_sess
+    session = get_sess(session_id)
+    if not session:
+        raise HTTPException(404, f"Session {session_id} not found")
+    return {
+        "session_id": session_id,
+        "gaps": [
+            {"label": g["label"], "category": g["category"], "status": g["status"], "evidence": g.get("evidence")}
+            for g in session.gap_context
+        ],
+        "open_gaps": session.open_gaps,
+        "closed_gaps": session.closed_gaps,
+        "current_gap": session.current_gap_being_tested,
+        "guardrail_activations": session.guardrail_activations,
+    }

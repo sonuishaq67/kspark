@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import VoiceOrb from "./VoiceOrb";
 import GhostwritingGuardrailBadge from "./GhostwritingGuardrailBadge";
+import LiveGapPanel from "./LiveGapPanel";
 import { useVoiceAgent } from "@/lib/useVoiceAgent";
 import { api } from "@/lib/api";
 import { playBase64Audio } from "@/lib/audioPlayer";
-import { ConversationTurn } from "@/lib/types";
+import { ConversationTurn, GapTrackingItem } from "@/lib/types";
 
 interface InterviewRoomProps {
   sessionId: string;
@@ -48,6 +49,9 @@ export default function InterviewRoom({
   ]);
   const [started, setStarted] = useState(false);
   const [introPlaying, setIntroPlaying] = useState(false);
+  const [gaps, setGaps] = useState<GapTrackingItem[]>([]);
+  const [currentGap, setCurrentGap] = useState<string | null>(null);
+  const [guardrailCount, setGuardrailCount] = useState(0);
 
   // Timer
   useEffect(() => {
@@ -63,7 +67,11 @@ export default function InterviewRoom({
       lastAgentTextRef.current = agent.latestAgentText;
       setConversation((prev) => [...prev, { speaker: "interviewer", text: agent.latestAgentText }]);
     }
-  }, [agent.latestAgentText]);
+    // Sync gap data from agent
+    if (agent.gaps.length > 0) setGaps(agent.gaps);
+    if (agent.currentGap) setCurrentGap(agent.currentGap);
+    setGuardrailCount(agent.guardrailCount);
+  }, [agent.latestAgentText, agent.gaps, agent.currentGap, agent.guardrailCount]);
 
   // Track user transcripts when they finish speaking
   const lastTranscriptRef = useRef("");
@@ -185,10 +193,20 @@ export default function InterviewRoom({
         </div>
       </div>
 
-      {agent.guardrailActivated && <GhostwritingGuardrailBadge activationCount={1} />}
+      {agent.guardrailActivated && <GhostwritingGuardrailBadge activationCount={guardrailCount} />}
 
-      {/* ── Orb + text ──────────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-4">
+      {/* ── Main: gap panel (left) + orb (center) ───────────────────────── */}
+      <div className="flex flex-1 w-full gap-4 overflow-hidden px-4">
+
+        {/* Gap panel sidebar */}
+        {gaps.length > 0 && (
+          <div className="hidden w-60 shrink-0 overflow-y-auto lg:block">
+            <LiveGapPanel gaps={gaps} currentGap={currentGap} guardrailCount={guardrailCount} />
+          </div>
+        )}
+
+        {/* Orb + text (center) */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-5">
 
         {/* Clickable orb area */}
         <button
@@ -225,6 +243,7 @@ export default function InterviewRoom({
             </p>
           </div>
         )}
+      </div>
       </div>
 
       {/* ── Controls ────────────────────────────────────────────────────── */}

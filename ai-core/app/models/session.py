@@ -125,6 +125,14 @@ class InterviewSession:
     # Scores (populated at end)
     scores: dict[str, Any] = field(default_factory=dict)
 
+    # Gap tracking (adaptive learning)
+    gap_context: list[dict[str, Any]] = field(default_factory=list)
+    # Each: {"label": str, "category": "strong"|"partial"|"missing", "evidence": str|None, "status": "open"|"improved"|"closed"}
+    open_gaps: list[str] = field(default_factory=list)
+    closed_gaps: list[str] = field(default_factory=list)
+    current_gap_being_tested: str | None = None
+    guardrail_activations: int = 0
+
     @property
     def current_phase(self) -> SessionPhase | None:
         if self.session_plan and self.current_phase_index < len(self.session_plan.phases):
