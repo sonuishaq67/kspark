@@ -24,7 +24,7 @@ import asyncio
 import logging
 from typing import Any
 
-from langgraph.graph import END, StateGraph
+from langgraph.graph import END, StateGraph, START
 
 from app.agents.evaluator import generate_report
 from app.agents.followup_selector import select_best_followup
@@ -357,8 +357,8 @@ def build_interview_graph() -> StateGraph:
     graph.add_node("advance_phase", node_advance_phase)
     graph.add_node("generate_report", node_generate_report)
 
-    # Entry point — route based on event type
-    graph.set_entry_point("load_context")
+    # Entry point routes to init flow
+    graph.add_edge(START, "load_context")
 
     # Session init flow (runs once)
     graph.add_edge("load_context", "create_session_plan")
