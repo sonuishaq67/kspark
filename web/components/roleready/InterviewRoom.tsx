@@ -52,6 +52,7 @@ export default function InterviewRoom({
   const [gaps, setGaps] = useState<GapTrackingItem[]>([]);
   const [currentGap, setCurrentGap] = useState<string | null>(null);
   const [guardrailCount, setGuardrailCount] = useState(0);
+  const [textInput, setTextInput] = useState("");
 
   // Timer
   useEffect(() => {
@@ -98,13 +99,26 @@ export default function InterviewRoom({
     }
   }, [agent.isSessionComplete, sessionId, router, agent]);
 
-  // ── Start session: play intro TTS then begin listening ─────────────────
+  // Auto-play intro TTS on mount
+  const introPlayedRef = useRef(false);
+  useEffect(() => {
+    if (introPlayedRef.current || !introMessage) return;
+    introPlayedRef.current = true;
+    setStarted(true);
+    setIntroPlaying(true);
+    api.aiCore.tts(introMessage).then((res) => {
+      if (res.audio) return playBase64Audio(res.audio);
+    }).catch(() => {}).finally(() => {
+      setIntroPlaying(false);
+      // Try to start voice agent (may fail if no mic permission — that's OK, text input works)
+      agent.start().catch(() => {});
+    });
+  }, [introMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStart = useCallback(async () => {
     setStarted(true);
     setIntroPlaying(true);
 
-    // Play intro via ElevenLabs TTS
     try {
       const res = await api.aiCore.tts(introMessage);
       if (res.audio) {
@@ -115,11 +129,10 @@ export default function InterviewRoom({
     }
 
     setIntroPlaying(false);
-    // Start the voice agent (mic + recognition + silence detection)
     await agent.start();
   }, [introMessage, agent]);
 
-  const handleStop = useCallback(() => {
+  const handleStop = useCallback(() => { // eslint-disable-line @typescript-eslint/no-unused-vars
     agent.stop();
     setStarted(false);
   }, [agent]);
@@ -131,6 +144,44 @@ export default function InterviewRoom({
     } catch { /* ignore */ }
     router.push(`/practice/report?session_id=${sessionId}`);
   }, [agent, sessionId, router]);
+
+  // ── Text input fallback ────────────────────────────────────────────────
+  const handleTextSubmit = useCallback(async () => {
+    const text = textInput.trim();
+    if (!text || agent.status === "processing" || agent.status === "speaking") return;
+
+    setTextInput("");
+    setConversation((prev) => [...prev, { speaker: "candidate", text }]);
+
+    // Use the agent's sendToAgent-like flow but via direct API call
+    try {
+      const res = await api.aiCore.textTurn(sessionId, text);
+      setConversation((prev) => [
+        ...prev,
+        { speaker: "interviewer", text: res.interviewer_response, guardrail: res.guardrail_activated },
+      ]);
+      if (res.guardrail_activated) setGuardrailCount((c) => c + 1);
+      if (res.gaps && res.gaps.length > 0) setGaps(res.gaps);
+      if (res.gap_addressed) setCurrentGap(res.gap_addressed);
+
+      // Play TTS for the response
+      try {
+        const tts = await api.aiCore.tts(res.interviewer_response);
+        if (tts.audio) await playBase64Audio(tts.audio);
+      } catch {
+        // TTS failed — text is still shown
+      }
+
+      if (res.is_session_complete) {
+        setTimeout(() => router.push(`/practice/report?session_id=${sessionId}`), 2000);
+      }
+    } catch {
+      setConversation((prev) => [
+        ...prev,
+        { speaker: "interviewer", text: "Something went wrong. Please try again." },
+      ]);
+    }
+  }, [textInput, sessionId, agent.status, router]);
 
   // ── Orb state mapping ──────────────────────────────────────────────────
 
@@ -248,31 +299,66 @@ export default function InterviewRoom({
 
       {/* ── Controls ────────────────────────────────────────────────────── */}
       {!agent.isSessionComplete && (
-        <div className="flex w-full items-center justify-between px-6 pb-6 pt-2">
-          {/* Transcript toggle */}
-          <button
-            onClick={() => setShowTranscript((v) => !v)}
-            className="flex items-center gap-2 rounded-full border border-gray-800 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-gray-700 hover:text-gray-300"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
-              <path fillRule="evenodd" d="M2 5a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm1 4a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H3Z" clipRule="evenodd" />
-            </svg>
-            {showTranscript ? "Hide" : "Transcript"}
-          </button>
+        <div className="flex w-full flex-col gap-3 px-4 pb-4 pt-2">
+          {/* Text input — always available as fallback */}
+          <div className="flex items-end gap-2">
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleTextSubmit();
+                }
+              }}
+              disabled={agent.status === "processing" || agent.status === "speaking" || introPlaying}
+              placeholder={
+                agent.status === "processing" ? "Thinking..."
+                : agent.status === "speaking" ? "Interviewer speaking..."
+                : "Type your answer or use the mic... (Enter to send)"
+              }
+              rows={2}
+              className="flex-1 resize-none rounded-xl border border-[#17211b]/10 bg-white px-4 py-3 text-sm text-[#17211b] placeholder-[#667169] focus:border-indigo-400 focus:outline-none disabled:opacity-50"
+            />
+            <button
+              onClick={handleTextSubmit}
+              disabled={!textInput.trim() || agent.status === "processing" || agent.status === "speaking"}
+              aria-label="Send"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#17211b] text-white transition-colors hover:bg-[#2b3a31] disabled:opacity-40"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+                <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.897 28.897 0 0 0 15.293-7.155.75.75 0 0 0 0-1.114A28.897 28.897 0 0 0 3.105 2.288Z" />
+              </svg>
+            </button>
+          </div>
 
-          {/* Stop / End */}
-          <div className="flex items-center gap-3">
-            {started && agent.status !== "idle" && (
-              <button
-                onClick={handleStop}
-                className="rounded-full border border-gray-700 px-4 py-2 text-xs text-gray-400 transition-colors hover:border-gray-600 hover:text-gray-200"
-              >
-                Pause
-              </button>
-            )}
+          {/* Bottom row: transcript toggle + voice status + end */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowTranscript((v) => !v)}
+              className="flex items-center gap-2 rounded-full border border-[#17211b]/10 px-3 py-1.5 text-xs text-[#667169] transition-colors hover:border-[#17211b]/20 hover:text-[#17211b]"
+            >
+              {showTranscript ? "Hide transcript" : "Show transcript"}
+            </button>
+
+            <div className="flex items-center gap-2 text-xs text-[#667169]">
+              {agent.status === "listening" && (
+                <span className="flex items-center gap-1 text-indigo-600">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-500" />
+                  Listening...
+                </span>
+              )}
+              {agent.status === "processing" && (
+                <span className="text-amber-600">Thinking...</span>
+              )}
+              {agent.status === "speaking" && (
+                <span className="text-emerald-600">Speaking</span>
+              )}
+            </div>
+
             <button
               onClick={handleEndSession}
-              className="flex items-center gap-2 rounded-full border border-gray-800 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-red-800/50 hover:text-red-400"
+              className="rounded-full border border-[#17211b]/10 px-3 py-1.5 text-xs text-[#667169] transition-colors hover:border-rose-300 hover:text-rose-600"
             >
               End Session
             </button>
