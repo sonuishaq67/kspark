@@ -12,68 +12,50 @@ const topicLabel: Record<string, string> = {
 
 export default function QuestionBreakdown({ threadSummary }: QuestionBreakdownProps) {
   if (!threadSummary || threadSummary.length === 0) {
-    return (
-      <p className="text-gray-500 text-sm italic">No question data available.</p>
-    );
+    return <p className="text-sm italic text-[#667169]">No question data available.</p>;
   }
 
   return (
     <div className="flex flex-col gap-4">
       {threadSummary.map((item) => (
-        <div
-          key={item.question_id}
-          className="bg-gray-800/60 border border-gray-700 rounded-xl p-5"
-        >
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4 mb-3">
+        <article key={item.question_id} className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-5 shadow-sm">
+          <div className="mb-3 flex items-start justify-between gap-4">
             <div className="flex-1">
-              <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
                 {topicLabel[item.topic] ?? item.topic}
               </span>
-              <p className="text-gray-100 font-medium mt-1 leading-snug">
-                {item.question_text}
-              </p>
+              <p className="mt-2 font-medium leading-6 text-[#17211b]">{item.question_text}</p>
             </div>
             <span
-              className={`
-                shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full
-                ${
-                  item.status === "closed"
-                    ? "bg-green-900/50 text-green-400 border border-green-700/50"
-                    : "bg-yellow-900/50 text-yellow-400 border border-yellow-700/50"
-                }
-              `}
+              className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                item.status === "closed"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-amber-200 bg-amber-50 text-amber-800"
+              }`}
             >
               {item.status === "closed" ? "Complete" : "Incomplete"}
             </span>
           </div>
 
-          {/* Stats row */}
-          <div className="flex gap-4 text-xs text-gray-400 mb-3">
+          <div className="mb-3 flex flex-wrap gap-4 text-xs text-[#667169]">
             <span>
-              <span className="text-gray-300 font-medium">{item.gaps_probed}</span> probe
-              {item.gaps_probed !== 1 ? "s" : ""}
+              <span className="font-semibold text-[#17211b]">{item.gaps_probed}</span> probe{item.gaps_probed !== 1 ? "s" : ""}
             </span>
             <span>
-              <span className="text-gray-300 font-medium">{item.gaps_closed.length}</span> gap
-              {item.gaps_closed.length !== 1 ? "s" : ""} closed
+              <span className="font-semibold text-[#17211b]">{item.gaps_closed.length}</span> closed
             </span>
             <span>
-              <span className="text-gray-300 font-medium">{item.gaps_open.length}</span> open
+              <span className="font-semibold text-[#17211b]">{item.gaps_open.length}</span> open
             </span>
           </div>
 
-          {/* Gaps */}
           {item.gaps_closed.length > 0 && (
             <div className="mb-2">
-              <p className="text-xs text-gray-500 mb-1.5">Covered:</p>
+              <p className="mb-1.5 text-xs text-[#667169]">Covered</p>
               <div className="flex flex-wrap gap-1.5">
-                {item.gaps_closed.map((g) => (
-                  <span
-                    key={g}
-                    className="text-xs bg-green-900/30 text-green-400 border border-green-800/50 rounded-full px-2.5 py-0.5"
-                  >
-                    ✓ {g}
+                {item.gaps_closed.map((gap) => (
+                  <span key={gap} className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-800">
+                    {gap}
                   </span>
                 ))}
               </div>
@@ -82,20 +64,17 @@ export default function QuestionBreakdown({ threadSummary }: QuestionBreakdownPr
 
           {item.gaps_open.length > 0 && (
             <div>
-              <p className="text-xs text-gray-500 mb-1.5">Missed:</p>
+              <p className="mb-1.5 text-xs text-[#667169]">Missed</p>
               <div className="flex flex-wrap gap-1.5">
-                {item.gaps_open.map((g) => (
-                  <span
-                    key={g}
-                    className="text-xs bg-gray-700/50 text-gray-400 border border-gray-600/50 rounded-full px-2.5 py-0.5"
-                  >
-                    {g}
+                {item.gaps_open.map((gap) => (
+                  <span key={gap} className="rounded-lg border border-[#17211b]/10 bg-white px-2.5 py-1 text-xs text-[#536058]">
+                    {gap}
                   </span>
                 ))}
               </div>
             </div>
           )}
-        </div>
+        </article>
       ))}
     </div>
   );

@@ -1,6 +1,6 @@
 """
-Groq LLM client wrapper.
-Uses llama-3.3-70b for reasoning and llama-3.1-8b for cheap classifier calls.
+OpenAI LLM client wrapper.
+Uses gpt-4o for reasoning and gpt-4o-mini for cheap classifier calls.
 """
 from __future__ import annotations
 
@@ -9,23 +9,23 @@ import logging
 import os
 from typing import Any
 
-from groq import AsyncGroq
+from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
-REASONING_MODEL = "llama-3.3-70b-versatile"
-CLASSIFIER_MODEL = "llama-3.1-8b-instant"
+REASONING_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+CLASSIFIER_MODEL = os.getenv("OPENAI_FAST_MODEL", "gpt-4o-mini")
 
-_client: AsyncGroq | None = None
+_client: AsyncOpenAI | None = None
 
 
-def _get_client() -> AsyncGroq:
+def _get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        api_key = os.getenv("GROQ_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise RuntimeError("GROQ_API_KEY is not set")
-        _client = AsyncGroq(api_key=api_key)
+            raise RuntimeError("OPENAI_API_KEY is not set")
+        _client = AsyncOpenAI(api_key=api_key)
     return _client
 
 
@@ -37,7 +37,7 @@ async def chat(
     max_tokens: int = 1024,
 ) -> str:
     """
-    Send a chat completion request to Groq.
+    Send a chat completion request to OpenAI.
     Returns the assistant message content as a string.
     """
     client = _get_client()
@@ -51,12 +51,12 @@ async def chat(
     if response_format:
         kwargs["response_format"] = response_format
 
-    logger.debug("Groq request model=%s messages=%d", model, len(messages))
+    logger.debug("OpenAI request model=%s messages=%d", model, len(messages))
 
     response = await client.chat.completions.create(**kwargs)
     content = response.choices[0].message.content or ""
 
-    logger.debug("Groq response tokens=%s", response.usage)
+    logger.debug("OpenAI response tokens=%s", response.usage)
     return content
 
 
@@ -78,5 +78,5 @@ async def chat_json(
     try:
         return json.loads(raw)
     except json.JSONDecodeError as exc:
-        logger.error("Groq returned non-JSON: %s", raw)
+        logger.error("OpenAI returned non-JSON: %s", raw)
         raise ValueError(f"LLM returned non-JSON response: {raw}") from exc

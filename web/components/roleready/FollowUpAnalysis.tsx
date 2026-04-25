@@ -5,21 +5,17 @@ interface FollowUpAnalysisProps {
 }
 
 function qualityTone(value: FollowUpAnalysisItem["candidate_response_quality"]) {
-  if (value === "strong") {
-    return "bg-green-900/40 text-green-300 border-green-700/50";
-  }
-  if (value === "weak") {
-    return "bg-red-900/40 text-red-300 border-red-700/50";
-  }
-  return "bg-amber-900/40 text-amber-300 border-amber-700/50";
+  if (value === "strong") return "bg-emerald-50 text-emerald-800 border-emerald-200";
+  if (value === "weak") return "bg-rose-50 text-rose-800 border-rose-200";
+  return "bg-amber-50 text-amber-800 border-amber-200";
 }
 
 export default function FollowUpAnalysis({ items }: FollowUpAnalysisProps) {
   if (!items.length) {
     return (
-      <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-5">
-        <h2 className="text-lg font-semibold text-gray-100">Why the AI asked follow-ups</h2>
-        <p className="mt-3 text-sm italic text-gray-400">
+      <div className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[#17211b]">Why the AI asked follow-ups</h2>
+        <p className="mt-3 text-sm italic text-[#667169]">
           No follow-up probes were recorded for this session.
         </p>
       </div>
@@ -27,39 +23,32 @@ export default function FollowUpAnalysis({ items }: FollowUpAnalysisProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-gray-800 bg-gray-900/70 p-5 sm:p-6">
+    <section className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-6 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-gray-100">Why the AI asked follow-ups</h2>
-        <p className="mt-2 text-sm text-gray-400">
+        <h2 className="text-lg font-semibold text-[#17211b]">Why the AI asked follow-ups</h2>
+        <p className="mt-2 text-sm leading-6 text-[#536058]">
           Each probe highlights where the interviewer needed more depth, specificity, or recovery.
         </p>
       </div>
 
       <div className="space-y-4">
         {items.map((item, index) => (
-          <article
-            key={`${item.question}-${index}`}
-            className="rounded-2xl border border-gray-800 bg-gray-950/70 p-5"
-          >
+          <article key={`${item.question}-${index}`} className="rounded-lg border border-[#17211b]/10 bg-white p-5">
             <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="max-w-2xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
                   Follow-up {index + 1}
                 </p>
-                <h3 className="mt-2 text-base font-medium leading-7 text-gray-100">
+                <h3 className="mt-2 text-base font-medium leading-7 text-[#17211b]">
                   {item.question}
                 </h3>
               </div>
-              <span
-                className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${qualityTone(
-                  item.candidate_response_quality
-                )}`}
-              >
+              <span className={`inline-flex rounded-lg border px-3 py-1 text-xs font-semibold capitalize ${qualityTone(item.candidate_response_quality)}`}>
                 {item.candidate_response_quality}
               </span>
             </div>
 
-            <p className="text-sm leading-6 text-gray-300">{item.reason}</p>
+            <p className="text-sm leading-6 text-[#536058]">{item.reason}</p>
           </article>
         ))}
       </div>
