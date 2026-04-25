@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Layout from "@/components/shared/Layout";
 import StepProgress from "@/components/roleready/StepProgress";
 import PrepBriefCard from "@/components/roleready/PrepBriefCard";
+import { api } from "@/lib/api";
 
 interface SkillItem {
   label: string;
@@ -22,6 +23,20 @@ interface ReadinessAnalysis {
   prep_brief: string[];
 }
 
+function LoadingBrief() {
+  return (
+    <div className="mx-auto max-w-4xl space-y-8">
+      <StepProgress activeStep={3} />
+      <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-[#17211b]/10 bg-[#fcfbf7]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#17211b]/10 border-t-[#17211b]" />
+          <p className="text-sm text-[#536058]">Loading your prep brief...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PrepBriefContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,7 +44,9 @@ function PrepBriefContent() {
 
   const [analysis, setAnalysis] = useState<ReadinessAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState("");
 
   useEffect(() => {
     if (!sessionId) {
@@ -38,12 +55,10 @@ function PrepBriefContent() {
       return;
     }
 
-    // Fetch analysis from sessionStorage (set by setup page)
     const stored = sessionStorage.getItem(`analysis_${sessionId}`);
     if (stored) {
       try {
-        const data = JSON.parse(stored) as ReadinessAnalysis;
-        setAnalysis(data);
+        setAnalysis(JSON.parse(stored) as ReadinessAnalysis);
       } catch {
         setError("Failed to load analysis data");
       }
@@ -53,28 +68,76 @@ function PrepBriefContent() {
     setLoading(false);
   }, [sessionId]);
 
-  const handleStartInterview = () => {
-    if (!sessionId) return;
-    router.push(`/practice/interview?session_id=${sessionId}`);
-  };
-
   const handleBack = () => {
     if (!sessionId) return;
     router.push(`/practice/gap-map?session_id=${sessionId}`);
   };
 
+  const handleStartInterview = async () => {
+    if (!analysis || starting) return;
+    setStarting(true);
+    setError(null);
+
+    try {
+      const resume = sessionStorage.getItem("roleready.lastResume") ?? "";
+      const jobDescription = sessionStorage.getItem("roleready.lastJD") ?? "";
+      const company = sessionStorage.getItem("roleready.lastCompany") ?? "";
+      const roleType = sessionStorage.getItem("roleready.lastRoleType") ?? "SDE1";
+
+      let contextFile = "";
+      if (company || resume || jobDescription) {
+        setProgress(company ? `Researching ${company}...` : "Building interview context...");
+        try {
+          const research = await api.research.prepare({
+            resume,
+            job_description: jobDescription,
+            company,
+            role_type: roleType,
+          });
+          contextFile = research.context_file;
+        } catch {
+          // Research is helpful, but the AI Core session can still start from the raw context.
+        }
+      }
+
+      setProgress("Setting up interviewer...");
+      const focusArea =
+        analysis.interview_focus_areas.length > 0
+          ? analysis.interview_focus_areas.slice(0, 3).join(", ")
+          : "general interview practice";
+
+      const response = await api.aiCore.startSession({
+        session_type: "BEHAVIORAL_PRACTICE",
+        duration_minutes: 15,
+        mode: "learning",
+        focus_area: focusArea,
+        company,
+        role_type: roleType,
+        resume,
+        job_description: jobDescription,
+        difficulty: "medium",
+        context_file: contextFile,
+      });
+
+      const params = new URLSearchParams({
+        session_id: response.session_id,
+        intro: encodeURIComponent(response.intro_message),
+        type: response.session_type,
+        mode: response.mode,
+        phases: response.phases.join(","),
+        duration: String(response.duration_minutes),
+      });
+
+      router.push(`/practice/interview?${params.toString()}`);
+    } catch (startError) {
+      setError(startError instanceof Error ? startError.message : "Failed to start session");
+      setStarting(false);
+      setProgress("");
+    }
+  };
+
   if (loading) {
-    return (
-      <div className="mx-auto max-w-4xl space-y-8">
-        <StepProgress activeStep={3} />
-        <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-[#17211b]/10 bg-[#fcfbf7]">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#17211b]/10 border-t-[#17211b]" />
-            <p className="text-sm text-[#536058]">Loading your prep brief...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingBrief />;
   }
 
   if (error || !analysis) {
@@ -113,16 +176,13 @@ function PrepBriefContent() {
         </p>
       </div>
 
-      {/* Readiness Score Summary */}
       <section className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
               Your readiness score
             </h2>
-            <p className="mt-2 text-sm leading-6 text-[#536058]">
-              {analysis.summary}
-            </p>
+            <p className="mt-2 text-sm leading-6 text-[#536058]">{analysis.summary}</p>
           </div>
           <div className="shrink-0 rounded-lg border border-[#17211b]/10 bg-white px-6 py-4 text-center">
             <p className="text-4xl font-semibold text-[#17211b]">
@@ -133,7 +193,6 @@ function PrepBriefContent() {
         </div>
       </section>
 
-      {/* Interview Focus Areas */}
       {analysis.interview_focus_areas.length > 0 && (
         <section className="space-y-4">
           <div>
@@ -147,7 +206,7 @@ function PrepBriefContent() {
           <div className="space-y-3">
             {analysis.interview_focus_areas.map((area, index) => (
               <div
-                key={index}
+                key={area}
                 className="flex items-start gap-3 rounded-lg border border-[#17211b]/10 bg-white p-4 shadow-sm"
               >
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#e7efe9] text-xs font-semibold text-[#17211b]">
@@ -160,7 +219,6 @@ function PrepBriefContent() {
         </section>
       )}
 
-      {/* Prep Brief Tips */}
       {analysis.prep_brief.length > 0 && (
         <section className="space-y-4">
           <div>
@@ -173,13 +231,33 @@ function PrepBriefContent() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {analysis.prep_brief.map((tip, index) => (
-              <PrepBriefCard key={index} tip={tip} index={index} />
+              <PrepBriefCard key={`${tip}-${index}`} tip={tip} index={index} />
             ))}
           </div>
         </section>
       )}
 
-      {/* Gap Summary */}
+      {analysis.missing_or_weak.length > 0 && (
+        <section className="rounded-lg border border-[#17211b]/10 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
+            Gaps the interviewer will probe
+          </h2>
+          <div className="space-y-2">
+            {analysis.missing_or_weak.map((gap, index) => (
+              <div
+                key={`${gap.label}-${index}`}
+                className="rounded-lg border border-rose-200 bg-rose-50 p-4"
+              >
+                <p className="text-sm font-semibold text-[#17211b]">{gap.label}</p>
+                {gap.evidence && (
+                  <p className="mt-1 text-sm leading-6 text-[#536058]">{gap.evidence}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-6 shadow-sm">
         <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
           Gap summary
@@ -206,7 +284,12 @@ function PrepBriefContent() {
         </div>
       </section>
 
-      {/* Call to Action */}
+      {error && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          {error}
+        </div>
+      )}
+
       <section className="rounded-lg border border-[#17211b]/10 bg-gradient-to-br from-[#e7efe9] to-[#fcfbf7] p-8 text-center shadow-sm">
         <h2 className="text-2xl font-semibold tracking-tight text-[#17211b]">
           Ready to practice?
@@ -215,7 +298,7 @@ function PrepBriefContent() {
           The interview will focus on your gaps and probe the areas where you need the most practice.
           Remember: we coach, we don&apos;t ghostwrite.
         </p>
-        <div className="mt-6 flex items-center justify-center gap-4">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleBack}
             className="rounded-lg border border-[#17211b]/15 bg-white px-5 py-3 text-sm font-semibold text-[#536058] transition hover:text-[#17211b]"
@@ -224,9 +307,10 @@ function PrepBriefContent() {
           </button>
           <button
             onClick={handleStartInterview}
-            className="rounded-lg bg-[#17211b] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#2b3a31]"
+            disabled={starting}
+            className="rounded-lg bg-[#17211b] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#2b3a31] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Start interview
+            {starting ? progress || "Starting..." : "Start interview"}
           </button>
         </div>
       </section>
@@ -237,19 +321,7 @@ function PrepBriefContent() {
 export default function PrepBriefPage() {
   return (
     <Layout>
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-4xl space-y-8">
-            <StepProgress activeStep={3} />
-            <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-[#17211b]/10 bg-[#fcfbf7]">
-              <div className="text-center">
-                <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#17211b]/10 border-t-[#17211b]" />
-                <p className="text-sm text-[#536058]">Loading your prep brief...</p>
-              </div>
-            </div>
-          </div>
-        }
-      >
+      <Suspense fallback={<LoadingBrief />}>
         <PrepBriefContent />
       </Suspense>
     </Layout>
