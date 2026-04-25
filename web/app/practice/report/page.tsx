@@ -105,38 +105,45 @@ function PracticeReportContent() {
         <StepProgress activeStep={5} />
 
         {loading ? (
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-8 text-sm text-gray-400">
+          <div className="flex items-center gap-3 rounded-3xl glass p-8 text-sm text-gray-400">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
             Loading report...
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-red-800/50 bg-red-950/30 p-5 text-sm text-red-200">
+          <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-5 text-sm text-rose-200">
             {error}
           </div>
         ) : notReady ? (
-          <div className="rounded-3xl border border-gray-800 bg-gray-900/70 p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-indigo-300">
-              Step 5
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-gray-100">
-              Report not ready
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-400">
-              The interview has not been finalized yet. Generate the report to score the session, capture the main gaps, and build the next practice plan.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                onClick={handleGenerateReport}
-                disabled={generating}
-                className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {generating ? "Generating..." : "Generate Report"}
-              </button>
-              <Link
-                href="/dashboard"
-                className="rounded-full border border-gray-700 px-5 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
-              >
-                Back to Dashboard
-              </Link>
+          <div className="relative overflow-hidden rounded-3xl glass-strong p-10">
+            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-3xl" />
+            <div className="absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
+            <div className="relative">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-indigo-200">
+                Step 5
+              </span>
+              <h1 className="mt-5 text-balance text-3xl font-bold tracking-tight md:text-4xl">
+                Your <span className="text-gradient">report is waiting</span> to be built.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-400">
+                The interview has not been finalized yet. Generate the report to score the session, capture the main gaps, and build the next practice plan.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <button
+                  onClick={handleGenerateReport}
+                  disabled={generating}
+                  className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-fuchsia-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
+                  {generating ? "Generating..." : "Generate report"}
+                  {!generating && <span aria-hidden>→</span>}
+                </button>
+                <Link
+                  href="/dashboard"
+                  className="rounded-full glass px-6 py-3 text-sm font-semibold text-gray-200 glass-hover"
+                >
+                  Back to dashboard
+                </Link>
+              </div>
             </div>
           </div>
         ) : report ? (
@@ -163,7 +170,7 @@ function PracticeReportContent() {
             </section>
 
             <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-6">
+              <div className="rounded-3xl glass p-6">
                 <h2 className="text-lg font-semibold text-gray-100">Strengths</h2>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-gray-300">
                   {report.strengths.map((item, index) => (
@@ -175,7 +182,7 @@ function PracticeReportContent() {
                 </ul>
               </div>
 
-              <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-6">
+              <div className="rounded-3xl glass p-6">
                 <h2 className="text-lg font-semibold text-gray-100">Gaps</h2>
                 <div className="mt-4 space-y-3">
                   {report.gaps.map((gap, index) => (
@@ -201,18 +208,20 @@ function PracticeReportContent() {
             <FollowUpAnalysis items={report.follow_up_analysis} />
             <NextPracticePlan items={report.next_practice_plan} />
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 pt-2">
               <Link
                 href="/practice/setup"
-                className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-fuchsia-500/30"
               >
-                Start Another Session
+                <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
+                Start another session
+                <span aria-hidden>→</span>
               </Link>
               <Link
                 href="/dashboard"
-                className="rounded-full border border-gray-700 px-5 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+                className="rounded-full glass px-6 py-3 text-sm font-semibold text-gray-200 glass-hover"
               >
-                Back to Dashboard
+                Back to dashboard
               </Link>
             </div>
           </>
@@ -227,7 +236,8 @@ export default function PracticeReportPage() {
     <Suspense
       fallback={
         <Layout>
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-8 text-sm text-gray-400">
+          <div className="flex items-center gap-3 rounded-3xl glass p-8 text-sm text-gray-400">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
             Loading report...
           </div>
         </Layout>

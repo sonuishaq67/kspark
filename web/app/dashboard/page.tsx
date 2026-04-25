@@ -2,6 +2,7 @@ import Link from "next/link";
 import Layout from "@/components/shared/Layout";
 import SessionCard from "@/components/p2/SessionCard";
 import DashboardStats from "@/components/roleready/DashboardStats";
+import ResumePdfUpload from "@/components/roleready/ResumePdfUpload";
 import { api } from "@/lib/api";
 import { SessionListItem } from "@/lib/types";
 
@@ -38,48 +39,71 @@ export default async function DashboardPage() {
 
   return (
     <Layout>
-      <div className="mb-8 flex items-center justify-between gap-4">
+      {/* Header */}
+      <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">RoleReady AI — Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Track readiness, revisit reports, and keep pressure on the gaps that still show up.
+          <span className="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            Coaching dashboard
+          </span>
+          <h1 className="mt-4 text-balance text-4xl font-bold tracking-tight md:text-5xl">
+            Track readiness — <span className="text-gradient">close the gaps that show up.</span>
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-gray-400">
+            Revisit reports, see how your follow-up recovery is trending, and keep pressure on the gaps that still matter.
           </p>
         </div>
         <Link
           href="/practice/setup"
-          className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+          className="group relative inline-flex items-center gap-2 self-start overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-fuchsia-500/30 md:self-auto"
         >
-          Start Practice
+          <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
+          Start practice
+          <span aria-hidden>→</span>
         </Link>
       </div>
 
+      <ResumePdfUpload />
+
       {!hasSessions ? (
-        <div className="rounded-3xl border border-dashed border-gray-800 bg-gray-900/40 px-6 py-20 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-300">
-            RoleReady AI
-          </p>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-gray-100">
-            Start your first practice
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-gray-400">
-            Compare your resume to the role, practice the right interview, and come back here for a coaching-focused report.
-          </p>
-          <Link
-            href="/practice/setup"
-            className="mt-8 inline-flex rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
-          >
-            Start Your First Practice
-          </Link>
+        <div className="relative overflow-hidden rounded-3xl glass-strong px-8 py-20 text-center">
+          <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl" />
+          <div className="absolute -bottom-24 -left-12 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-indigo-200">
+              First session
+            </span>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-gray-100 md:text-4xl">
+              Run your first mock interview
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-gray-400">
+              Compare your resume to the role, practice the right interview type, and come back here for a coaching-focused report scored against the rubric.
+            </p>
+            <Link
+              href="/practice/setup"
+              className="mt-10 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-fuchsia-500/30"
+            >
+              Start your first practice
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           <DashboardStats sessions={displaySessions} />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Recent Sessions
-          </h2>
-          {displaySessions.map((s) => (
-            <SessionCard key={s.session_id} session={s} />
-          ))}
+
+          <div className="flex items-center gap-4">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-400">
+              Recent sessions
+            </h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-white/15 to-transparent" />
+          </div>
+
+          <div className="grid gap-4">
+            {displaySessions.map((s) => (
+              <SessionCard key={s.session_id} session={s} />
+            ))}
+          </div>
         </div>
       )}
     </Layout>

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/shared/Layout";
 import StepProgress from "@/components/roleready/StepProgress";
 import { api } from "@/lib/api";
+
+const RESUME_DRAFT_KEY = "roleready.resumeDraft";
 
 const SESSION_TYPES = [
   {
@@ -77,6 +79,19 @@ const DIFFICULTIES = [
   { id: "hard", label: "Hard" },
 ];
 
+function parseApiError(error: unknown): string {
+  if (!(error instanceof Error)) return "Failed to parse resume file";
+
+  try {
+    const body = JSON.parse(error.message) as { detail?: string };
+    if (body.detail) return body.detail;
+  } catch {
+    // Use the raw message below.
+  }
+
+  return error.message || "Failed to parse resume file";
+}
+
 // Example data for quick testing
 const EXAMPLE_DATA = {
   resume: `John Doe
@@ -144,6 +159,20 @@ export default function PracticeSetupPage() {
 
   const selectedType = SESSION_TYPES.find((t) => t.id === sessionType)!;
 
+  useEffect(() => {
+    const draft = localStorage.getItem(RESUME_DRAFT_KEY);
+    if (!draft) return;
+
+    try {
+      const parsed = JSON.parse(draft) as { text?: string };
+      if (parsed.text) {
+        setResume((current) => current || parsed.text || "");
+      }
+    } catch {
+      localStorage.removeItem(RESUME_DRAFT_KEY);
+    }
+  }, []);
+
   const handleTypeChange = (id: string) => {
     setSessionType(id);
     const t = SESSION_TYPES.find((x) => x.id === id)!;
@@ -154,16 +183,49 @@ export default function PracticeSetupPage() {
 
   const handleResumeFile = async (file: File) => {
     if (!file) return;
-    if (file.size > 1_000_000) {
+    if (file.size > 5_000_000) {
       setError("Resume file too large — paste a summary instead");
       return;
     }
-    if (!/\.(txt|md|markdown)$/i.test(file.name)) {
-      setError("Only .txt or .md files are supported. Paste your resume into the box for other formats.");
+
+    if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
+      setError(null);
+      setProgress("Pulling resume text from PDF...");
+      try {
+        const parsed = await api.resume.parsePdf(file);
+        setResume(parsed.text);
+        localStorage.setItem(
+          RESUME_DRAFT_KEY,
+          JSON.stringify({
+            text: parsed.text,
+            filename: parsed.filename,
+            pages: parsed.pages,
+            uploadedAt: new Date().toISOString(),
+          })
+        );
+      } catch (error) {
+        setError(parseApiError(error));
+      } finally {
+        setProgress("");
+      }
       return;
     }
+
+    if (!/\.(txt|md|markdown)$/i.test(file.name)) {
+      setError("Only .pdf, .txt, or .md files are supported.");
+      return;
+    }
+
     const text = await file.text();
     setResume(text);
+    localStorage.setItem(
+      RESUME_DRAFT_KEY,
+      JSON.stringify({
+        text,
+        filename: file.name,
+        uploadedAt: new Date().toISOString(),
+      })
+    );
     setError(null);
   };
 
@@ -237,49 +299,62 @@ export default function PracticeSetupPage() {
     setCompany("");
     setRoleType("SDE1");
     setFocusArea(selectedType.defaultFocus);
+    localStorage.removeItem(RESUME_DRAFT_KEY);
   };
 
   return (
     <Layout>
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="mx-auto max-w-3xl space-y-8">
         <StepProgress activeStep={1} />
 
-        <div>
-          <h1 className="text-2xl font-bold text-gray-100">Start Practice</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Choose what you want to practice and the AI will adapt the session.
+        <div className="space-y-3">
+          <span className="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            New session
+          </span>
+          <h1 className="text-balance text-4xl font-bold tracking-tight md:text-5xl">
+            Configure your <span className="text-gradient">mock interview</span>
+          </h1>
+          <p className="max-w-xl text-sm leading-relaxed text-gray-400">
+            Pick the session type and drop in context. The AI adapts its phases, rubric, and questions accordingly.
           </p>
         </div>
 
         {/* Session type */}
-        <section>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+        <section className="rounded-3xl glass p-6">
+          <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
             Session Type
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {SESSION_TYPES.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => handleTypeChange(t.id)}
-                className={`relative rounded-2xl border p-4 text-left transition-all ${
-                  sessionType === t.id
-                    ? "border-indigo-600 bg-indigo-950/40"
-                    : "border-gray-800 bg-gray-900/60 hover:border-gray-700"
-                }`}
-              >
-                <span className="mb-2 block text-xl">{t.icon}</span>
-                <p className="text-sm font-semibold text-gray-100">{t.label}</p>
-                <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                  {t.description}
-                </p>
-              </button>
-            ))}
+            {SESSION_TYPES.map((t) => {
+              const active = sessionType === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleTypeChange(t.id)}
+                  className={`group relative overflow-hidden rounded-2xl p-4 text-left transition-all ${
+                    active
+                      ? "border border-transparent bg-gradient-to-br from-indigo-500/30 via-fuchsia-500/15 to-teal-400/15 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-400/40"
+                      : "border border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <span className="mb-2 block text-xl">{t.icon}</span>
+                  <p className="text-sm font-semibold text-white">{t.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-400">
+                    {t.description}
+                  </p>
+                  {active && (
+                    <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_12px_currentColor]" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </section>
 
         {/* Focus area */}
-        <section>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+        <section className="rounded-3xl glass p-6">
+          <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
             Focus Area
           </label>
           <input
@@ -287,14 +362,14 @@ export default function PracticeSetupPage() {
             value={focusArea}
             onChange={(e) => setFocusArea(e.target.value)}
             placeholder={`e.g. "${selectedType.defaultFocus || "your topic"}"`}
-            className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none"
           />
         </section>
 
         {/* Company + Role */}
-        <section className="grid grid-cols-2 gap-3">
+        <section className="grid grid-cols-2 gap-4 rounded-3xl glass p-6">
           <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+            <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
               Company
             </label>
             <input
@@ -302,11 +377,11 @@ export default function PracticeSetupPage() {
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder="e.g. Google, Akamai"
-              className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+            <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
               Role
             </label>
             <input
@@ -314,102 +389,110 @@ export default function PracticeSetupPage() {
               value={roleType}
               onChange={(e) => setRoleType(e.target.value)}
               placeholder="e.g. SDE1, SDE2"
-              className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none"
             />
           </div>
         </section>
 
-        {/* Mode */}
-        <section>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-            Mode
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMode(m.id)}
-                className={`relative rounded-2xl border p-4 text-left transition-all ${
-                  mode === m.id
-                    ? "border-indigo-600 bg-indigo-950/40"
-                    : "border-gray-800 bg-gray-900/60 hover:border-gray-700"
-                }`}
-              >
-                {m.recommended && (
-                  <span className="absolute right-3 top-3 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                    Default
-                  </span>
-                )}
-                <p className="text-sm font-semibold text-gray-100">{m.label}</p>
-                <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                  {m.description}
-                </p>
-              </button>
-            ))}
-          </div>
-        </section>
+        {/* Mode + Difficulty side-by-side on wide */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Mode */}
+          <section className="rounded-3xl glass p-6">
+            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
+              Mode
+            </h2>
+            <div className="grid grid-cols-1 gap-3">
+              {MODES.map((m) => {
+                const active = mode === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setMode(m.id)}
+                    className={`relative rounded-2xl p-4 text-left transition-all ${
+                      active
+                        ? "border border-transparent bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/15 ring-1 ring-indigo-400/40"
+                        : "border border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    {m.recommended && (
+                      <span className="absolute right-3 top-3 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        Default
+                      </span>
+                    )}
+                    <p className="text-sm font-semibold text-white">{m.label}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-400">
+                      {m.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-        {/* Difficulty */}
-        <section>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-            Difficulty
-          </h2>
-          <div className="flex gap-3">
-            {DIFFICULTIES.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => setDifficulty(d.id)}
-                className={`relative flex-1 rounded-xl border py-3 text-sm font-semibold transition-all ${
-                  difficulty === d.id
-                    ? "border-indigo-600 bg-indigo-950/40 text-indigo-200"
-                    : "border-gray-800 bg-gray-900/60 text-gray-400 hover:border-gray-700"
-                }`}
-              >
-                {d.recommended && (
-                  <span className="absolute right-2 top-1.5 rounded-full bg-indigo-600 px-1.5 py-0.5 text-[9px] font-semibold text-white">
-                    Default
-                  </span>
-                )}
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </section>
+          {/* Difficulty */}
+          <section className="rounded-3xl glass p-6">
+            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
+              Difficulty
+            </h2>
+            <div className="grid grid-cols-3 gap-3">
+              {DIFFICULTIES.map((d) => {
+                const active = difficulty === d.id;
+                return (
+                  <button
+                    key={d.id}
+                    onClick={() => setDifficulty(d.id)}
+                    className={`relative rounded-xl py-3 text-sm font-semibold transition-all ${
+                      active
+                        ? "border border-transparent bg-gradient-to-br from-indigo-500/30 to-fuchsia-500/20 text-white ring-1 ring-indigo-400/40"
+                        : "border border-white/10 bg-white/[0.03] text-gray-400 hover:border-white/20 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    {d.recommended && (
+                      <span className="absolute right-1.5 top-1 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                        Default
+                      </span>
+                    )}
+                    {d.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
 
         {/* Optional: Resume + JD */}
-        <section>
+        <section className="rounded-3xl glass p-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-              Context (Optional but recommended)
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
+              Context — optional, recommended
             </h2>
             <div className="flex gap-2">
               <button
                 onClick={loadExampleData}
-                className="rounded-lg border border-indigo-600/50 bg-indigo-950/30 px-3 py-1.5 text-xs font-medium text-indigo-300 transition-colors hover:bg-indigo-950/50"
+                className="rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-200 transition-colors hover:bg-indigo-500/20"
               >
                 📝 Load Example
               </button>
               <button
                 onClick={clearAllFields}
-                className="rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-gray-800"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-white/10"
               >
                 🗑 Clear All
               </button>
             </div>
           </div>
-          <p className="mb-3 text-xs text-gray-500">
-            The researcher uses your resume + the company name to fetch interview signal,
-            then the AI interviewer uses that to shape its persona and questions.
+          <p className="mb-4 text-xs text-gray-500">
+            Tavily uses your resume + company to fetch interview signal, then the AI interviewer uses it to shape its persona and questions.
           </p>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+              <label className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">
                 <span>Resume</span>
-                <label className="cursor-pointer rounded-full border border-gray-700 px-3 py-1 text-[10px] font-semibold normal-case tracking-normal text-gray-400 transition-colors hover:border-indigo-600 hover:text-indigo-300">
-                  Upload .txt / .md
+                <label className="cursor-pointer rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold normal-case tracking-normal text-gray-300 transition-colors hover:border-indigo-400/50 hover:text-indigo-200">
+                  Upload PDF / text
                   <input
                     type="file"
-                    accept=".txt,.md,.markdown,text/plain,text/markdown"
+                    accept=".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown"
                     className="hidden"
                     onChange={(e) => e.target.files?.[0] && handleResumeFile(e.target.files[0])}
                   />
@@ -418,14 +501,14 @@ export default function PracticeSetupPage() {
               <textarea
                 value={resume}
                 onChange={(e) => setResume(e.target.value)}
-                placeholder="Paste your resume or upload a .txt/.md file..."
+                placeholder="Paste your resume or upload a PDF, .txt, or .md file..."
                 rows={5}
                 maxLength={8000}
-                className="w-full resize-none rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
+                className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">
                 Job Description
               </label>
               <textarea
@@ -434,14 +517,14 @@ export default function PracticeSetupPage() {
                 placeholder="Paste the job description..."
                 rows={4}
                 maxLength={8000}
-                className="w-full resize-none rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none"
+                className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none"
               />
             </div>
           </div>
         </section>
 
         {error && (
-          <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-300">
+          <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-200">
             {error}
           </div>
         )}
@@ -449,9 +532,22 @@ export default function PracticeSetupPage() {
         <button
           onClick={handleStart}
           disabled={loading}
-          className="w-full rounded-full bg-indigo-600 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 py-4 text-sm font-semibold text-white shadow-2xl shadow-fuchsia-500/30 transition-shadow hover:shadow-fuchsia-500/50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? (progress || "Starting session...") : `Start ${selectedType.label} →`}
+          <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
+          <span className="relative inline-flex items-center justify-center gap-2">
+            {loading ? (
+              <>
+                <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                {progress || "Starting session..."}
+              </>
+            ) : (
+              <>
+                Start {selectedType.label}
+                <span aria-hidden>→</span>
+              </>
+            )}
+          </span>
         </button>
       </div>
     </Layout>

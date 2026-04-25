@@ -49,7 +49,8 @@ export default function LandingPage() {
 function NavBar() {
   return (
     <header className="sticky top-0 z-40 w-full">
-      <div className="mx-auto mt-4 flex max-w-7xl items-center justify-between rounded-full glass px-6 py-3">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[88px] bg-gradient-to-b from-[#050510] via-[#050510]/85 to-transparent backdrop-blur-md" />
+      <div className="relative mx-auto mt-4 flex max-w-7xl items-center justify-between rounded-full glass px-6 py-3">
         <Link href="/" className="flex items-center gap-2">
           <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-teal-400">
             <span className="absolute inset-[3px] rounded-full bg-[#050510]" />

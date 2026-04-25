@@ -46,7 +46,7 @@ export default function SessionCard({ session }: SessionCardProps) {
   const title = session.target_role || "Generic Interview";
 
   return (
-    <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-5 transition-colors hover:border-gray-700">
+    <div className="rounded-3xl glass p-6 glass-hover">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="mb-3 flex items-center gap-3">

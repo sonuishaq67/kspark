@@ -41,6 +41,18 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function requestForm<T>(url: string, body: FormData): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    body,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new ApiError(res.status, text);
+  }
+  return res.json() as Promise<T>;
+}
+
 // ── Legacy backend API (existing orchestrator) ────────────────────────────────
 
 export interface Question {
@@ -127,6 +139,20 @@ export const api = {
         method: "POST",
         body: JSON.stringify(body),
       }),
+  },
+
+  // ── Resume parsing ─────────────────────────────────────────────────────
+
+  resume: {
+    parsePdf: (file: File) => {
+      const body = new FormData();
+      body.append("file", file);
+      return requestForm<{
+        filename: string;
+        text: string;
+        pages: number;
+      }>(`${BACKEND_URL}/api/resume/parse-pdf`, body);
+    },
   },
 
   // ── AI Core (new microservice on :8001) ────────────────────────────────

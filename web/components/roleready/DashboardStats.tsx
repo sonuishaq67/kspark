@@ -58,7 +58,7 @@ function StatCard({
   helper: string;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-5">
+    <div className="rounded-3xl glass p-6 glass-hover">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">{label}</p>
       <p className="mt-3 text-3xl font-semibold tracking-tight text-gray-50">{value}</p>
       <p className="mt-2 text-sm text-gray-400">{helper}</p>
@@ -77,7 +77,7 @@ export default function DashboardStats({ sessions }: DashboardStatsProps) {
         value={String(sessions.length)}
         helper="Completed and in-progress practice sessions."
       />
-      <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-5">
+      <div className="rounded-3xl glass p-6 glass-hover">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
           Average Readiness
         </p>
