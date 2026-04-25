@@ -26,9 +26,14 @@ _GHOSTWRITE_PATTERNS = [
     r"tell me (the |a )?answer",
     r"give me (a |the )?sample",
     r"give me (a |the )?template",
-    r"can you (just )?answer (this|it|for me)",
-    r"write my answer",
+    r"can you (just )?(write|answer|give)",
+    r"write (me )?(a |the |my )?(good |perfect |sample |example )?answer",
     r"answer for me",
+    r"write my answer",
+    r"what (should|would) (i|you) say",
+    r"how (should|do) i answer",
+    r"(show|tell) me (how to answer|what to say|the answer)",
+    r"give me (something|a response|a reply) (to say|i can say|i can use)",
 ]
 _GHOSTWRITE_RE = re.compile("|".join(_GHOSTWRITE_PATTERNS), re.IGNORECASE)
 
