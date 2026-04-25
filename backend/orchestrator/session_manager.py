@@ -7,7 +7,8 @@ import logging
 import uuid
 
 from db import queries
-from llm.client import REASONING_MODEL, chat
+from llm.client import CLASSIFIER_MODEL, REASONING_MODEL, chat
+from llm.mock_responses import is_mock_mode
 from llm.prompts import get_prompt
 from orchestrator.state import (
     OrchestratorState,
@@ -95,8 +96,11 @@ Do NOT list what you'll cover. Just greet and ask."""
         {"role": "user", "content": f"First question to ask: {first_q.text}"},
     ]
 
-    from llm.client import chat
-    intro = await chat(messages, model=REASONING_MODEL, temperature=0.7, max_tokens=120)
+    if is_mock_mode():
+        intro = _mock_intro_message(first_q.text, session.persona_id)
+    else:
+        from llm.client import chat
+        intro = await chat(messages, model=REASONING_MODEL, temperature=0.7, max_tokens=120)
 
     # Record the intro as an agent turn
     session.turn_history.append(TurnRecord(
@@ -344,6 +348,16 @@ def _build_thread_summary_list(session: SessionState) -> list[dict]:
     return result
 
 
+def _mock_intro_message(question_text: str, persona_id: str) -> str:
+    persona_openers = {
+        "friendly": "Welcome in. Let's keep this practical and low-pressure.",
+        "challenging": "Let's start directly and keep the bar high.",
+        "neutral": "Let's begin.",
+    }
+    opener = persona_openers.get(persona_id, persona_openers["neutral"])
+    return f"{opener} First question: {question_text}"
+
+
 async def _generate_tldr(
     transcript: str,
     thread_summary: str,
@@ -377,6 +391,9 @@ async def _transition_to_next_question(
     persona_fragment: str,
     mode: str,
 ) -> str:
+    if is_mock_mode():
+        return f"Let's move on. {next_question_text}"
+
     system = f"""You are an AI interviewer transitioning to the next question.
 {persona_fragment}
 Mode: {mode}

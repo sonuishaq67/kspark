@@ -48,3 +48,4 @@ python-multipart==0.0.9        # FastAPI file uploads
 pytest==8.2.0
 pytest-asyncio==0.23.6
 hypothesis==6.100.0            # Backend: Property-based testing
+pylint==3.2.2

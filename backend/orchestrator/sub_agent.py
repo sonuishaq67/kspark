@@ -9,6 +9,7 @@ import re
 from dataclasses import dataclass
 
 from llm.client import CLASSIFIER_MODEL, REASONING_MODEL, chat, chat_json
+from llm.mock_responses import is_mock_mode
 from llm.prompts import get_prompt
 from orchestrator.thread_tracker import ThreadState, get_open_gaps
 from questions.loader import Question
@@ -65,12 +66,23 @@ async def run_turn(
 
     # 1. Ghostwriting check (fast regex, no LLM call)
     if _is_ghostwriting(turn_transcript):
-        refusal = await _generate_refusal(mode, turn_transcript, persona_prompt_fragment)
+        if is_mock_mode():
+            refusal = _mock_refusal(mode)
+        else:
+            refusal = await _generate_refusal(mode, turn_transcript, persona_prompt_fragment)
         return SubAgentResponse(
             action="refuse",
             utterance=refusal,
             gap_addressed=None,
             classification="refusal",
+        )
+
+    if is_mock_mode():
+        return _run_turn_mock(
+            question=question,
+            thread_state=thread_state,
+            turn_transcript=turn_transcript,
+            persona_id=persona_id,
         )
 
     # 2. Classify the turn
@@ -139,6 +151,100 @@ async def run_turn(
             gap_addressed=gap_addressed,
             classification="partial",
         )
+
+
+def _run_turn_mock(
+    question: Question,
+    thread_state: ThreadState,
+    turn_transcript: str,
+    persona_id: str,
+) -> SubAgentResponse:
+    normalized = turn_transcript.strip().lower()
+    open_gaps = get_open_gaps(thread_state)
+
+    if _looks_like_clarification(normalized):
+        return SubAgentResponse(
+            action="clarify",
+            utterance=_mock_clarification(question.text),
+            gap_addressed=None,
+            classification="clarify",
+        )
+
+    if _looks_like_stall(normalized):
+        return SubAgentResponse(
+            action="stall",
+            utterance=_stall_nudge(persona_id),
+            gap_addressed=None,
+            classification="stall",
+        )
+
+    if thread_state.probe_count == 0 and open_gaps:
+        target_gap = open_gaps[0]
+        return SubAgentResponse(
+            action="probe",
+            utterance=_mock_probe(target_gap),
+            gap_addressed=target_gap,
+            classification="partial",
+        )
+
+    addressed_gap = open_gaps[0] if open_gaps else None
+    return SubAgentResponse(
+        action="advance",
+        utterance=_mock_acknowledgment(persona_id),
+        gap_addressed=addressed_gap,
+        classification="complete",
+    )
+
+
+def _looks_like_clarification(transcript: str) -> bool:
+    starters = (
+        "can you clarify",
+        "could you clarify",
+        "can you repeat",
+        "could you repeat",
+        "what do you mean",
+        "do you mean",
+    )
+    return transcript.startswith(starters) or transcript.endswith("?")
+
+
+def _looks_like_stall(transcript: str) -> bool:
+    stall_phrases = {
+        "",
+        "um",
+        "uh",
+        "hmm",
+        "not sure",
+        "i don't know",
+        "no idea",
+    }
+    return transcript in stall_phrases or len(transcript.split()) <= 2
+
+
+def _mock_probe(target_gap: str) -> str:
+    return f"Give me one concrete example that shows {target_gap.lower()}."
+
+
+def _mock_refusal(mode: str) -> str:
+    if mode == "learning":
+        return "I won't script the answer for you. Give me your version, and I'll help sharpen it."
+    return "I won't provide a canned answer. Walk me through your own thinking instead."
+
+
+def _mock_acknowledgment(persona_id: str) -> str:
+    transitions = {
+        "friendly": "That gives me enough detail. Let's move to the next one.",
+        "neutral": "That's clear. Let's move on.",
+        "challenging": "That's sufficient. Next question.",
+    }
+    return transitions.get(persona_id, transitions["neutral"])
+
+
+def _mock_clarification(question_text: str) -> str:
+    return (
+        "Use one specific example and focus on your decisions, your ownership, and the outcome. "
+        f"The question is: {question_text}"
+    )
 
 
 # ── LLM helpers ───────────────────────────────────────────────────────────────
