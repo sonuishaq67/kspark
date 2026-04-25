@@ -292,12 +292,8 @@ export default function PracticeSetupPage() {
           });
           contextFile = research.context_file;
         } catch (researchErr) {
-          console.warn("Research step failed:", researchErr);
-          throw new Error(
-            company
-              ? `Could not complete Tavily research for ${company}. Please check the backend/Tavily key and try again.`
-              : "Could not build interview context. Please check the backend and try again."
-          );
+          console.warn("Research step failed, continuing without context:", researchErr);
+          // Don't block — just skip research and go straight to interview
         }
       }
 
