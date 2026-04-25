@@ -42,3 +42,13 @@ CREATE TABLE IF NOT EXISTS turns (
 
 CREATE INDEX IF NOT EXISTS turns_session_created
     ON turns (session_id, created_at);
+
+CREATE TABLE IF NOT EXISTS research_cache (
+    id               TEXT PRIMARY KEY,
+    company          TEXT NOT NULL,
+    role             TEXT NOT NULL,
+    search_category  TEXT NOT NULL CHECK (search_category IN ('question_types', 'interviewer_types')),
+    results_json     TEXT NOT NULL,
+    created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (company, role, search_category)
+);
