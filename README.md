@@ -145,7 +145,7 @@ interview-coach/
 
 - **Steering docs** (`.kiro/steering/`) lock product direction, tech stack, responsible AI principles, and hackathon scope — so every decision stays aligned.
 - **Specs** (`.kiro/specs/roleready-ai-mvp/`) break the build into three independent workstreams with clear API contracts between them.
-- **Task files** divide work by person with zero overlap — Ishaq owns gap analysis, Shivam owns the interview loop, Vard owns reporting and dashboard.
+- **Task files** divide work by person with zero overlap — Ishaq owns gap analysis, Shivam owns the interview loop, Varad owns reporting and dashboard.
 - **Mock mode** and eval cases keep the demo reliable regardless of API key availability.
 - Kiro helped turn a broad platform idea into a focused, testable hackathon MVP with a clear demo path.
 
@@ -157,7 +157,7 @@ interview-coach/
 |--------|-----------|------|
 | Ishaq | JD/Resume Gap Engine | `.kiro/specs/roleready-ai-mvp/tasks-ishaq.md` |
 | Shivam | Adaptive Interview Loop | `.kiro/specs/roleready-ai-mvp/tasks-shivam.md` |
-| Vard | Dashboard & Reporting | `.kiro/specs/roleready-ai-mvp/tasks-vard.md` |
+| Varad | Dashboard & Reporting | `.kiro/specs/roleready-ai-mvp/tasks-varad.md` |
 
 ---
 
@@ -174,9 +174,10 @@ make test       # Run pytest
 ### Local (no Docker)
 
 ```bash
-# Backend
+# Backend (using conda)
 cd backend
-python -m venv venv && source venv/bin/activate
+conda create -n roleready python=3.11 -y
+conda activate roleready
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 

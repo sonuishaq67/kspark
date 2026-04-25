@@ -11,7 +11,7 @@ interface ReportPageProps {
 
 async function getReport(sessionId: string) {
   try {
-    return await api.getReport(sessionId);
+    return await api.getLegacyReport(sessionId);
   } catch {
     return null;
   }

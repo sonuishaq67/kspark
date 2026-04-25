@@ -20,6 +20,11 @@ CREATE TABLE IF NOT EXISTS sessions (
     state                TEXT NOT NULL DEFAULT 'PLANNING',
     current_question_idx INTEGER NOT NULL DEFAULT 0,
     questions_completed  INTEGER NOT NULL DEFAULT 0,
+    target_role          TEXT,
+    company_name         TEXT,
+    interview_type       TEXT DEFAULT 'mixed',
+    readiness_score      INTEGER,
+    summary              TEXT,
     started_at           TEXT NOT NULL DEFAULT (datetime('now')),
     ended_at             TEXT,
     tldr                 TEXT
@@ -43,6 +48,7 @@ CREATE TABLE IF NOT EXISTS turns (
 CREATE INDEX IF NOT EXISTS turns_session_created
     ON turns (session_id, created_at);
 
+-- Tavily research cache (researcher agent)
 CREATE TABLE IF NOT EXISTS research_cache (
     id               TEXT PRIMARY KEY,
     company          TEXT NOT NULL,
@@ -52,3 +58,34 @@ CREATE TABLE IF NOT EXISTS research_cache (
     created_at       TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (company, role, search_category)
 );
+
+-- Gap tracking (Ishaq's gap engine)
+CREATE TABLE IF NOT EXISTS gaps (
+    id          TEXT PRIMARY KEY,
+    session_id  TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    label       TEXT NOT NULL,
+    category    TEXT NOT NULL CHECK (category IN ('strong', 'partial', 'missing')),
+    evidence    TEXT,
+    status      TEXT NOT NULL DEFAULT 'open'
+                     CHECK (status IN ('open', 'improved', 'closed')),
+    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS gaps_session
+    ON gaps (session_id);
+
+-- Session reports (Vard's reporting module)
+CREATE TABLE IF NOT EXISTS reports (
+    id              TEXT PRIMARY KEY,
+    session_id      TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    summary         TEXT NOT NULL,
+    strengths_json  TEXT NOT NULL,
+    gaps_json       TEXT NOT NULL,
+    scores_json     TEXT NOT NULL,
+    followup_json   TEXT NOT NULL,
+    next_steps_json TEXT NOT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS reports_session
+    ON reports (session_id);
