@@ -68,10 +68,10 @@ function GapMapContent() {
     return (
       <div className="mx-auto max-w-4xl space-y-8">
         <StepProgress activeStep={2} />
-        <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-[#17211b]/10 bg-[#fcfbf7]">
           <div className="text-center">
-            <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
-            <p className="text-sm text-gray-400">Loading your gap analysis...</p>
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#17211b]/10 border-t-[#17211b]" />
+            <p className="text-sm text-[#536058]">Loading your gap analysis...</p>
           </div>
         </div>
       </div>
@@ -82,15 +82,15 @@ function GapMapContent() {
     return (
       <div className="mx-auto max-w-4xl space-y-8">
         <StepProgress activeStep={2} />
-        <div className="rounded-3xl border border-rose-400/30 bg-rose-500/10 p-8 text-center">
-          <p className="mb-4 text-lg font-semibold text-rose-200">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-8 text-center">
+          <p className="mb-4 text-lg font-semibold text-rose-800">
             {error || "Analysis not found"}
           </p>
           <button
             onClick={handleBack}
-            className="rounded-full border border-white/20 bg-white/10 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+            className="rounded-lg bg-[#17211b] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2b3a31]"
           >
-            ← Back to Setup
+            Back to setup
           </button>
         </div>
       </div>
@@ -101,15 +101,15 @@ function GapMapContent() {
     <div className="mx-auto max-w-4xl space-y-8">
       <StepProgress activeStep={2} />
 
-      <div className="space-y-3">
-        <span className="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          Analysis Complete
-        </span>
-        <h1 className="text-balance text-4xl font-bold tracking-tight md:text-5xl">
-          Your <span className="text-gradient">readiness gap map</span>
+      <div>
+        <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-[#17211b]/15 bg-white/55 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#536058]">
+          <span className="h-2 w-2 rounded-full bg-emerald-600" />
+          Analysis complete
+        </div>
+        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-[#17211b] md:text-5xl">
+          Your readiness gap map
         </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-gray-400">
+        <p className="mt-4 max-w-2xl text-base leading-7 text-[#536058]">
           {analysis.summary}
         </p>
       </div>
@@ -126,23 +126,23 @@ function GapMapContent() {
 
       {/* Interview Focus Areas */}
       {analysis.interview_focus_areas.length > 0 && (
-        <section className="rounded-3xl glass p-6">
-          <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-400">
-            Interview Focus Areas
+        <section className="rounded-lg border border-[#17211b]/10 bg-[#fcfbf7] p-6 shadow-sm">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#667169]">
+            Interview focus areas
           </h2>
-          <p className="mb-4 text-sm text-gray-400">
+          <p className="mb-4 text-sm leading-6 text-[#536058]">
             The interviewer will probe these areas to validate your experience:
           </p>
           <ul className="space-y-3">
             {analysis.interview_focus_areas.map((area, index) => (
               <li
                 key={index}
-                className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                className="flex items-start gap-3 rounded-lg border border-[#17211b]/10 bg-white p-4"
               >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-semibold text-indigo-300">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#e7efe9] text-xs font-semibold text-[#17211b]">
                   {index + 1}
                 </span>
-                <p className="text-sm text-gray-200">{area}</p>
+                <p className="text-sm leading-6 text-[#45514a]">{area}</p>
               </li>
             ))}
           </ul>
@@ -153,19 +153,15 @@ function GapMapContent() {
       <div className="flex items-center justify-between gap-4">
         <button
           onClick={handleBack}
-          className="rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-white/10"
+          className="rounded-lg border border-[#17211b]/15 bg-white px-5 py-3 text-sm font-semibold text-[#536058] transition hover:text-[#17211b]"
         >
-          ← Back to Setup
+          Back to setup
         </button>
         <button
           onClick={handleContinue}
-          className="group relative overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-teal-400 px-8 py-3 text-sm font-semibold text-white shadow-2xl shadow-fuchsia-500/30 transition-shadow hover:shadow-fuchsia-500/50"
+          className="rounded-lg bg-[#17211b] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2b3a31]"
         >
-          <span className="absolute inset-0 sheen translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
-          <span className="relative inline-flex items-center gap-2">
-            Continue to Prep Brief
-            <span aria-hidden>→</span>
-          </span>
+          Continue to prep brief
         </button>
       </div>
     </div>
@@ -179,10 +175,10 @@ export default function GapMapPage() {
         fallback={
           <div className="mx-auto max-w-4xl space-y-8">
             <StepProgress activeStep={2} />
-            <div className="flex min-h-[400px] items-center justify-center">
+            <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-[#17211b]/10 bg-[#fcfbf7]">
               <div className="text-center">
-                <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
-                <p className="text-sm text-gray-400">Loading your gap analysis...</p>
+                <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#17211b]/10 border-t-[#17211b]" />
+                <p className="text-sm text-[#536058]">Loading your gap analysis...</p>
               </div>
             </div>
           </div>

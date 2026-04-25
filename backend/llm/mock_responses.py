@@ -180,8 +180,8 @@ MOCK_RESPONSES: dict[str, Any] = {
 
 
 def is_mock_mode() -> bool:
-    """Mock mode is on when MOCK_LLM=1 or no Groq API key is configured."""
-    return os.getenv("MOCK_LLM") == "1" or not os.getenv("GROQ_API_KEY")
+    """Mock mode is on when MOCK_LLM=1 or no OpenAI API key is configured."""
+    return os.getenv("MOCK_LLM") == "1" or not os.getenv("OPENAI_API_KEY")
 
 
 def get_mock_response(name: str) -> Any:
