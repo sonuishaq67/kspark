@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import TranscriptBubble from "./TranscriptBubble";
-import LiveGapPanel from "./LiveGapPanel";
+import VoiceOrb from "./VoiceOrb";
 import GhostwritingGuardrailBadge from "./GhostwritingGuardrailBadge";
-import { api } from "@/lib/api";
-import { AICoreReport, ConversationTurn } from "@/lib/types";
+import { useInterviewSocket } from "@/lib/useInterviewSocket";
+import { useMicrophone } from "@/lib/useMicrophone";
+import { ConversationTurn } from "@/lib/types";
 
 interface InterviewRoomProps {
   sessionId: string;
@@ -17,7 +17,16 @@ interface InterviewRoomProps {
   durationMinutes: number;
 }
 
-type RoomStatus = "idle" | "thinking" | "streaming" | "complete" | "ending";
+function formatTime(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+function phaseLabel(p: string | null) {
+  if (!p) return "";
+  return p.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function InterviewRoom({
   sessionId,
@@ -28,293 +37,291 @@ export default function InterviewRoom({
   durationMinutes,
 }: InterviewRoomProps) {
   const router = useRouter();
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
-  // Conversation state
+  const socket = useInterviewSocket(sessionId);
+  const mic = useMicrophone({ ws: socket.ws, onServerEvent: undefined });
+
+  const [guardrailCount] = useState(0);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(durationMinutes * 60);
+
+  // Seed the intro message into conversation once
   const [conversation, setConversation] = useState<ConversationTurn[]>([
     { speaker: "interviewer", text: introMessage },
   ]);
-  const [streamingText, setStreamingText] = useState("");
-  const [inputText, setInputText] = useState("");
-  const [status, setStatus] = useState<RoomStatus>("idle");
 
-  // Session state
-  const [currentPhase, setCurrentPhase] = useState<string | null>(
-    phases[0] ?? null
-  );
-  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(durationMinutes * 60);
-  const [guardrailCount, setGuardrailCount] = useState(0);
-  const [report, setReport] = useState<AICoreReport | null>(null);
-
-  // Timer countdown
+  // Merge socket conversation updates
   useEffect(() => {
-    if (status === "complete") return;
-    const interval = setInterval(() => {
-      setTimeRemaining((t) => Math.max(0, t - 1));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [status]);
+    if (socket.conversation.length > 0) {
+      setConversation([
+        { speaker: "interviewer", text: introMessage },
+        ...socket.conversation,
+      ]);
+    }
+  }, [socket.conversation, introMessage]);
 
-  // Auto-scroll
+  // Timer (local countdown — server sends timer_update too but this is instant)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversation, streamingText, status]);
+    if (socket.isComplete) return;
+    const id = setInterval(() => setTimeRemaining((t) => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(id);
+  }, [socket.isComplete]);
 
-  const handleSubmit = useCallback(async () => {
-    const text = inputText.trim();
-    if (!text || status === "thinking" || status === "streaming") return;
+  // Sync server timer
+  useEffect(() => {
+    if (socket.timeRemaining > 0) setTimeRemaining(socket.timeRemaining);
+  }, [socket.timeRemaining]);
 
-    setInputText("");
-    setStatus("thinking");
+  // Auto-scroll transcript
+  useEffect(() => {
+    transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: "smooth" });
+  }, [conversation, socket.streamingText]);
 
-    // Add candidate turn immediately
-    setConversation((prev) => [...prev, { speaker: "candidate", text }]);
-
-    try {
-      const res = await api.aiCore.textTurn(sessionId, text);
-
-      if (res.guardrail_activated) {
-        setGuardrailCount((c) => c + 1);
-      }
-
-      // Simulate streaming by revealing text word by word
-      const words = res.interviewer_response.split(" ");
-      setStatus("streaming");
-      let built = "";
-
-      for (const word of words) {
-        built += (built ? " " : "") + word;
-        setStreamingText(built);
-        await new Promise((r) => setTimeout(r, 35));
-      }
-
-      setStreamingText("");
-      setConversation((prev) => [
-        ...prev,
-        {
-          speaker: "interviewer",
-          text: res.interviewer_response,
-          guardrail: res.guardrail_activated,
-        },
-      ]);
-
-      // Update phase
-      if (res.current_phase) {
-        const idx = phases.indexOf(res.current_phase);
-        setCurrentPhase(res.current_phase);
-        if (idx >= 0) setCurrentPhaseIndex(idx);
-      }
-
-      if (res.is_session_complete) {
-        setStatus("complete");
-      } else {
-        setStatus("idle");
-        // Re-focus input
-        setTimeout(() => inputRef.current?.focus(), 50);
-      }
-    } catch (err) {
-      console.error("Turn failed:", err);
-      setConversation((prev) => [
-        ...prev,
-        {
-          speaker: "interviewer",
-          text: "Something went wrong. Please try again.",
-        },
-      ]);
-      setStatus("idle");
+  // Navigate to report when done
+  useEffect(() => {
+    if (socket.isComplete && socket.report) {
+      setTimeout(() => router.push(`/practice/report?session_id=${sessionId}`), 3000);
     }
-  }, [inputText, sessionId, status, phases]);
+  }, [socket.isComplete, socket.report, sessionId, router]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    },
-    [handleSubmit]
-  );
+  // ── Orb state ─────────────────────────────────────────────────────────────
+  const orbState = (() => {
+    if (mic.isRecording) return "listening" as const;
+    if (socket.isSpeaking) return "speaking" as const;
+    if (socket.isThinking) return "thinking" as const;
+    return "idle" as const;
+  })();
 
-  const handleEndSession = useCallback(async () => {
-    if (status === "ending") return;
-    setStatus("ending");
+  // ── Latest agent text to show below orb ──────────────────────────────────
+  const latestAgentText = socket.streamingText ||
+    [...conversation].reverse().find((t) => t.speaker === "interviewer")?.text ||
+    introMessage;
 
-    try {
-      const r = await api.aiCore.endSession(sessionId);
-      setReport(r);
-      setStatus("complete");
-    } catch (err) {
-      console.error("End session failed:", err);
-      // Navigate to report anyway
-      router.push(`/practice/report?session_id=${sessionId}`);
+  // ── Mic tap handler ───────────────────────────────────────────────────────
+  const handleMicPress = useCallback(async () => {
+    if (socket.isThinking || socket.isSpeaking || socket.isComplete) return;
+
+    if (mic.isRecording) {
+      mic.stopRecording();
+    } else {
+      await mic.startRecording();
     }
-  }, [sessionId, status, router]);
+  }, [mic, socket.isThinking, socket.isSpeaking, socket.isComplete]);
 
-  const isInputDisabled =
-    status === "thinking" || status === "streaming" || status === "ending";
-  const isEnding = status === "ending";
+  const handleEndSession = useCallback(() => {
+    if (mic.isRecording) mic.stopRecording();
+    socket.sendEndSession();
+  }, [mic, socket]);
+
+  const isProcessing = (socket.isThinking || socket.isSpeaking) as boolean;
+  const isActive = !socket.isComplete;
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col gap-3">
-      {/* Top bar — phase + timer */}
-      <div className="flex items-start gap-3">
-        <div className="flex-1">
-          <LiveGapPanel
-            currentPhase={currentPhase}
-            currentPhaseIndex={currentPhaseIndex}
-            totalPhases={phases.length}
-            timeRemaining={timeRemaining}
-          />
+    <div className="relative flex h-[calc(100vh-7rem)] flex-col items-center overflow-hidden">
+
+      {/* ── Top bar ─────────────────────────────────────────────────────── */}
+      <div className="flex w-full items-center justify-between px-2 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+            {phaseLabel(socket.currentPhase)}
+          </span>
+          {phases.length > 0 && (
+            <div className="flex gap-1">
+              {phases.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1 w-5 rounded-full transition-all ${
+                    i < socket.currentPhaseIndex
+                      ? "bg-indigo-500"
+                      : i === socket.currentPhaseIndex
+                      ? "bg-indigo-400"
+                      : "bg-gray-800"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Session meta */}
-        <div className="shrink-0 rounded-2xl border border-gray-800 bg-gray-900/70 px-4 py-3 text-right">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
-            {sessionType.replace(/_/g, " ")}
-          </p>
-          <p className="mt-1 text-xs text-gray-400 capitalize">{mode} mode</p>
+        <div className="flex items-center gap-3">
+          {/* Connection dot */}
+          <span className={`h-1.5 w-1.5 rounded-full ${
+            socket.isConnected ? "bg-green-500" : "bg-gray-600 animate-pulse"
+          }`} />
+          <span className={`text-sm font-semibold tabular-nums ${
+            timeRemaining < 120 ? "text-red-400" : "text-gray-400"
+          }`}>
+            {formatTime(timeRemaining)}
+          </span>
+          <span className="text-xs text-gray-600">
+            {sessionType.replace(/_/g, " ")} · {mode}
+          </span>
         </div>
       </div>
 
-      {/* Guardrail badge */}
       <GhostwritingGuardrailBadge activationCount={guardrailCount} />
 
-      {/* Transcript */}
-      <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-800 bg-gray-900/50 p-4">
-        <div className="flex flex-col gap-3">
-          {conversation.map((turn, i) => (
-            <TranscriptBubble key={i} turn={turn} />
-          ))}
+      {/* ── Orb + text ──────────────────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-4">
 
-          {/* Streaming text */}
-          {streamingText && (
-            <div className="flex justify-start">
-              <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-gray-700/50 bg-gray-800 px-4 py-3 text-sm leading-relaxed text-gray-100">
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-300">
-                  Interviewer
-                </p>
-                <p className="whitespace-pre-wrap">{streamingText}</p>
-                <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-indigo-400" />
-              </div>
-            </div>
-          )}
-
-          {/* Thinking indicator */}
-          {status === "thinking" && !streamingText && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl rounded-bl-sm border border-gray-700/50 bg-gray-800 px-4 py-3">
-                <div className="flex items-center gap-1">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Session complete */}
-          {status === "complete" && !report && (
-            <div className="rounded-2xl border border-green-700/40 bg-green-950/30 p-4 text-center">
-              <p className="text-sm font-semibold text-green-300">
-                Session complete — generating your report...
-              </p>
-            </div>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-      </div>
-
-      {/* Input area */}
-      {status !== "complete" && status !== "ending" ? (
-        <div className="flex items-end gap-3 rounded-2xl border border-gray-800 bg-gray-900/70 p-3">
-          <textarea
-            ref={inputRef}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isInputDisabled}
-            placeholder={
-              isInputDisabled
-                ? "Interviewer is responding..."
-                : "Type your answer... (Enter to send, Shift+Enter for new line)"
-            }
-            rows={3}
-            className="flex-1 resize-none rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          />
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={handleSubmit}
-              disabled={isInputDisabled || !inputText.trim()}
-              aria-label="Send answer"
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-                <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.897 28.897 0 0 0 15.293-7.155.75.75 0 0 0 0-1.114A28.897 28.897 0 0 0 3.105 2.288Z" />
-              </svg>
-            </button>
-            <button
-              onClick={handleEndSession}
-              disabled={isEnding}
-              aria-label="End session"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-700 text-gray-400 transition-colors hover:border-red-700/50 hover:text-red-400 disabled:opacity-40"
-              title="End session"
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
+        {/* Orb */}
+        <div className="relative flex items-center justify-center">
+          <VoiceOrb state={orbState} volume={mic.volume} />
+          <div className="absolute bottom-3 left-0 right-0 text-center">
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/40">
+              {mic.isRecording && "Listening..."}
+              {socket.isThinking && !mic.isRecording && "Thinking..."}
+              {socket.isSpeaking && "Speaking"}
+              {!mic.isRecording && !socket.isThinking && !socket.isSpeaking && !socket.isComplete && "Tap to speak"}
+              {socket.isComplete && "Done"}
+            </span>
           </div>
         </div>
-      ) : (
-        /* Report CTA */
-        report && (
-          <div className="rounded-2xl border border-indigo-700/40 bg-indigo-950/40 p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
-                  Session Complete
-                </p>
-                <p className="mt-1 text-lg font-semibold text-gray-100">
-                  Overall Score:{" "}
-                  <span className="text-indigo-300">{report.overall_score}/10</span>
-                </p>
+
+        {/* Live mic transcript echoed from server */}
+        {mic.isRecording && mic.liveText && (
+          <p className="max-w-md text-center text-sm italic leading-relaxed text-indigo-200/70">
+            &ldquo;{mic.liveText.trim()}&rdquo;
+          </p>
+        )}
+
+        {/* Agent message */}
+        {!mic.isRecording && latestAgentText && (
+          <div className="max-w-lg rounded-2xl border border-gray-800 bg-gray-900/60 px-5 py-4 text-center">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-indigo-400">
+              Interviewer
+            </p>
+            <p className="text-sm leading-relaxed text-gray-100">
+              {latestAgentText}
+              {socket.streamingText && (
+                <span className="ml-1 inline-block h-3 w-0.5 animate-pulse bg-indigo-400" />
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Controls ────────────────────────────────────────────────────── */}
+      {isActive && (
+        <div className="flex w-full items-center justify-between px-6 pb-6 pt-2">
+
+          {/* Transcript toggle */}
+          <button
+            onClick={() => setShowTranscript((v) => !v)}
+            className="flex items-center gap-2 rounded-full border border-gray-800 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-gray-700 hover:text-gray-300"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+              <path fillRule="evenodd" d="M2 5a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm1 4a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H3Z" clipRule="evenodd" />
+            </svg>
+            {showTranscript ? "Hide" : "Transcript"}
+          </button>
+
+          {/* Mic button */}
+          <button
+            onClick={handleMicPress}
+            disabled={isProcessing}
+            aria-label={mic.isRecording ? "Stop speaking" : "Start speaking"}
+            className={`relative flex h-20 w-20 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-950 disabled:cursor-not-allowed disabled:opacity-40 ${
+              mic.isRecording
+                ? "bg-red-600 focus:ring-red-500 shadow-lg shadow-red-900/60"
+                : "bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-500 shadow-lg shadow-indigo-900/40"
+            }`}
+          >
+            {mic.isRecording && (
+              <>
+                <span className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-20" />
+                <span className="absolute inset-[-8px] animate-pulse rounded-full border border-red-500/30" />
+              </>
+            )}
+            {mic.isRecording ? (
+              <svg viewBox="0 0 24 24" fill="currentColor" className="relative z-10 h-8 w-8 text-white">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="currentColor" className="relative z-10 h-8 w-8 text-white">
+                <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1 17.93V21H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.07A8.001 8.001 0 0 0 20 11a1 1 0 1 0-2 0 6 6 0 0 1-12 0 1 1 0 1 0-2 0 8.001 8.001 0 0 0 7 7.93z" />
+              </svg>
+            )}
+          </button>
+
+          {/* End session */}
+          <button
+            onClick={handleEndSession}
+            className="flex items-center gap-2 rounded-full border border-gray-800 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-red-800/50 hover:text-red-400"
+          >
+            End
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+              <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* ── Transcript drawer ────────────────────────────────────────────── */}
+      {showTranscript && (
+        <div
+          ref={transcriptRef}
+          className="absolute bottom-28 left-4 right-4 max-h-60 overflow-y-auto rounded-2xl border border-gray-800 bg-gray-950/95 p-4 backdrop-blur"
+        >
+          <div className="flex flex-col gap-2">
+            {conversation.map((turn, i) => (
+              <div key={i} className={`flex ${turn.speaker === "candidate" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                  turn.speaker === "candidate"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-800 text-gray-200"
+                }`}>
+                  {turn.text}
+                </div>
               </div>
-              <button
-                onClick={() =>
-                  router.push(`/practice/report?session_id=${sessionId}`)
-                }
-                className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
-              >
-                View Full Report →
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {report.strengths.slice(0, 2).map((s, i) => (
-                <span
-                  key={i}
-                  className="rounded-full border border-green-700/40 bg-green-950/30 px-3 py-1 text-xs text-green-300"
-                >
+            ))}
+            {socket.streamingText && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-xl bg-gray-800 px-3 py-2 text-xs text-gray-200">
+                  {socket.streamingText}
+                  <span className="ml-0.5 inline-block h-2.5 w-0.5 animate-pulse bg-indigo-400" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Session complete overlay ─────────────────────────────────────── */}
+      {socket.isComplete && socket.report && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-950/90 backdrop-blur">
+          <div className="mx-4 w-full max-w-sm rounded-3xl border border-indigo-700/40 bg-gray-900 p-8 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">
+              Session Complete
+            </p>
+            <p className="mt-3 text-4xl font-semibold text-gray-100">
+              {socket.report.overall_score}
+              <span className="text-xl text-gray-500">/10</span>
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {socket.report.strengths.slice(0, 2).map((s, i) => (
+                <span key={i} className="rounded-full border border-green-700/40 bg-green-950/30 px-3 py-1 text-xs text-green-300">
                   ✓ {s}
                 </span>
               ))}
-              {report.weaknesses.slice(0, 2).map((w, i) => (
-                <span
-                  key={i}
-                  className="rounded-full border border-amber-700/40 bg-amber-950/30 px-3 py-1 text-xs text-amber-300"
-                >
-                  ↑ {w}
-                </span>
-              ))}
             </div>
+            <p className="mt-3 text-xs text-gray-500">Redirecting to report...</p>
+            <button
+              onClick={() => router.push(`/practice/report?session_id=${sessionId}`)}
+              className="mt-4 w-full rounded-full bg-indigo-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+            >
+              View Full Report →
+            </button>
           </div>
-        )
+        </div>
+      )}
+
+      {/* Mic / connection errors */}
+      {(mic.error || socket.status === "error") && (
+        <div className="absolute bottom-32 left-4 right-4 rounded-xl border border-red-800/50 bg-red-950/40 px-4 py-3 text-center text-xs text-red-300">
+          {mic.error || "Connection error — please refresh"}
+        </div>
       )}
     </div>
   );
