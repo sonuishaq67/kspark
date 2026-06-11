@@ -45,7 +45,7 @@ pypdf==4.2.0                   # Resume PDF text extraction
 python-multipart==0.0.9        # FastAPI file uploads
 
 # ── Testing ───────────────────────────────────────────────────────────────────
-pytest==8.2.0
+pytest==9.0.3
 pytest-asyncio==0.23.6
 hypothesis==6.100.0            # Backend: Property-based testing
 pylint==3.2.2
